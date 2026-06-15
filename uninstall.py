@@ -246,8 +246,10 @@ class GiftuberUninstallerApp:
             bat_script = os.path.join(tempfile.gettempdir(), 'giftuber_uninstall.bat')
             bat_content = (
                 "@echo off\r\n"
-                "timeout /t 3 /nobreak > nul\r\n"
+                "timeout /t 5 /nobreak > nul\r\n"
                 f'rmdir /s /q "{install_dir}"\r\n'
+                "timeout /t 1 /nobreak > nul\r\n"
+                f'if exist "{install_dir}" rmdir /s /q "{install_dir}"\r\n'
                 'del "%~f0"\r\n'
             )
             with open(bat_script, 'w', encoding='utf-8') as f:
