@@ -12,8 +12,7 @@ updater.ps1
 project_update.zip
 
 # Large executable binaries & packages
-Instalador_Giftuber.exe
-Instalador_Giftuber.zip
+Instalador_Giftuber*
 project_files.zip
 test_project_files.zip
 test_version.json
