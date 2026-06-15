@@ -210,7 +210,12 @@ class GiftuberInstallerApp:
                 
             if os.path.exists(zip_path):
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                    zip_ref.extractall(target_dir)
+                    for member in zip_ref.infolist():
+                        member_path = os.path.normpath(member.filename)
+                        dest_file = os.path.join(target_dir, member_path)
+                        if member_path == "giftuber_calibration.json" and os.path.exists(dest_file):
+                            continue
+                        zip_ref.extract(member, target_dir)
             else:
                 raise Exception("No se encontró el paquete de archivos 'project_files.zip'.")
                 
