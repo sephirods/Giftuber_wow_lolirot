@@ -1553,6 +1553,35 @@
             if (containerShine) {
                 containerShine.style.display = (false) ? 'block' : 'none';
             }
+            applyLegsCrop();
+        }
+
+        function applyLegsCrop() {
+            const cropY = calibration.legs_crop_y !== undefined ? calibration.legs_crop_y : 81.0;
+            const cropX = calibration.legs_crop_x !== undefined ? calibration.legs_crop_x : 0.0;
+            
+            const halfWidth = cropX >= 0 ? 13 + cropX * 0.37 : 13 + cropX * 0.13;
+            const leftPerc = 50 - halfWidth;
+            const rightPerc = 50 + halfWidth;
+
+            userImg.style.setProperty('--legs-crop-y', `${cropY}%`);
+            userImg.style.setProperty('--legs-crop-left', `${leftPerc}%`);
+            userImg.style.setProperty('--legs-crop-right', `${rightPerc}%`);
+
+            if (avatarWrapper.classList.contains('active-elf-split')) {
+                userImg.style.clipPath = `polygon(
+                    0% 0%, 
+                    100% 0%, 
+                    100% 100%, 
+                    ${rightPerc}% 100%, 
+                    ${rightPerc}% ${cropY}%, 
+                    ${leftPerc}% ${cropY}%, 
+                    ${leftPerc}% 100%, 
+                    0% 100%
+                )`;
+            } else {
+                userImg.style.clipPath = '';
+            }
         }
 
         // Bucle de Parpadeo
@@ -2255,17 +2284,7 @@
                     if (calLegs.legs_y !== undefined) {
                         legsImg.style.setProperty('--legs-y', `${calLegs.legs_y}px`);
                     }
-                    if (calLegs.legs_crop_y !== undefined) {
-                        userImg.style.setProperty('--legs-crop-y', `${calLegs.legs_crop_y}%`);
-                    }
-                    if (calLegs.legs_crop_x !== undefined) {
-                        const cropX = calLegs.legs_crop_x;
-                        const halfWidth = cropX >= 0 ? 13 + cropX * 0.37 : 13 + cropX * 0.13;
-                        const leftPerc = 50 - halfWidth;
-                        const rightPerc = 50 + halfWidth;
-                        userImg.style.setProperty('--legs-crop-left', `${leftPerc}%`);
-                        userImg.style.setProperty('--legs-crop-right', `${rightPerc}%`);
-                    }
+                    applyLegsCrop();
                     
                     // Configurar variables de alas para cuando se activen
                     if (calLegs.wings_scale !== undefined) {

@@ -344,15 +344,10 @@ if (Test-Path 'project_update.zip') {{
     Remove-Item 'project_update.zip' -Force
 }}
 
-# Limpiar variable de entorno de PyInstaller para evitar conflictos de DLL
-if (Test-Path env:_MEIPASS) {{
-    Remove-Item env:_MEIPASS -Force
-}}
-
-# Limpiar PATH de referencias a carpetas temporales antiguas _MEI
+# Limpiar variables de entorno de PyInstaller para evitar conflictos de DLL
+$env:_MEIPASS = $null
 if ($env:PATH) {{
-    $pathDirs = ($env:PATH -split ';') | Where-Object {{ $_ -notlike '*_MEI*' }}
-    $env:PATH = $pathDirs -join ';'
+    $env:PATH = (($env:PATH -split ';') | Where-Object {{ $_ -notlike '*_MEI*' }}) -join ';'
 }}
 
 # Iniciar la nueva versión

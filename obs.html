@@ -476,6 +476,33 @@
 
     let walkFrame = 1;
     let walkFrameIv = null;
+    function applyLegsCrop() {
+        const cropY = cal.legs_crop_y !== undefined ? cal.legs_crop_y : 81.0;
+        const cropX = cal.legs_crop_x !== undefined ? cal.legs_crop_x : 0.0;
+        
+        const halfWidth = cropX >= 0 ? 13 + cropX * 0.37 : 13 + cropX * 0.13;
+        const leftPerc = 50 - halfWidth;
+        const rightPerc = 50 + halfWidth;
+
+        userImg.style.setProperty('--legs-crop-y', `${cropY}%`);
+        userImg.style.setProperty('--legs-crop-left', `${leftPerc}%`);
+        userImg.style.setProperty('--legs-crop-right', `${rightPerc}%`);
+
+        if (wrapper.classList.contains('active-elf-split')) {
+            userImg.style.clipPath = `polygon(
+                0% 0%, 
+                100% 0%, 
+                100% 100%, 
+                ${rightPerc}% 100%, 
+                ${rightPerc}% ${cropY}%, 
+                ${leftPerc}% ${cropY}%, 
+                ${leftPerc}% 100%, 
+                0% 100%
+            )`;
+        } else {
+            userImg.style.clipPath = '';
+        }
+    }
     function startWalkAnim() {
         if (walkActive) return;
 
@@ -496,6 +523,7 @@
                 walkFrame = walkFrame === 1 ? 2 : 1;
                 legs.src = `assets/${activeAvatar}/wow_chibi_legs_walk_${walkFrame}.png`;
             }, 250);
+            applyLegsCrop();
         }
     }
     function stopWalkAnim() {
@@ -504,6 +532,7 @@
         clearInterval(walkFrameIv);
         const legs = document.getElementById('legs-walk-overlay');
         if (legs) legs.style.display = 'none';
+        applyLegsCrop();
     }
 
     // ── Speaking state ─────────────────────────────────────
@@ -975,17 +1004,7 @@
             // Calibración
             if (s.calibration) {
                 Object.assign(cal, s.calibration);
-                
-                const cropY = cal.legs_crop_y !== undefined ? cal.legs_crop_y : 81.0;
-                const cropX = cal.legs_crop_x !== undefined ? cal.legs_crop_x : 0.0;
-                
-                const halfWidth = cropX >= 0 ? 13 + cropX * 0.37 : 13 + cropX * 0.13;
-                const leftPerc = 50 - halfWidth;
-                const rightPerc = 50 + halfWidth;
-
-                userImg.style.setProperty('--legs-crop-y', `${cropY}%`);
-                userImg.style.setProperty('--legs-crop-left', `${leftPerc}%`);
-                userImg.style.setProperty('--legs-crop-right', `${rightPerc}%`);
+                applyLegsCrop();
 
                 // Actualizar en tiempo real los overlays de alas activos en OBS
                 document.querySelectorAll('.avenging-wrath-overlay').forEach(ov => {

@@ -961,6 +961,22 @@
             avatarImg.style.setProperty('--legs-crop-left', `${leftPerc}%`);
             avatarImg.style.setProperty('--legs-crop-right', `${rightPerc}%`);
             avatarImg.style.setProperty('--legs-crop-y', `${legsCropY}%`);
+
+            const wrapper = document.getElementById('avatar-wrapper');
+            if (wrapper && wrapper.classList.contains('active-elf-split')) {
+                avatarImg.style.clipPath = `polygon(
+                    0% 0%, 
+                    100% 0%, 
+                    100% 100%, 
+                    ${rightPerc}% 100%, 
+                    ${rightPerc}% ${legsCropY}%, 
+                    ${leftPerc}% ${legsCropY}%, 
+                    ${leftPerc}% 100%, 
+                    0% 100%
+                )`;
+            } else {
+                avatarImg.style.clipPath = '';
+            }
         }
     }
 
@@ -1732,6 +1748,7 @@ UpdateWalkState() {
                 if (legsImg) {
                     legsImg.style.display = 'none';
                 }
+                applyLegsCrop();
             }
         }
         setInterval(syncElfDisplay, 50);
