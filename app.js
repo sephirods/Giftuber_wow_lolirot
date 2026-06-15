@@ -1160,7 +1160,14 @@ async function checkUpdates() {
                                 body: JSON.stringify({ download_url: res.download_url })
                             });
                             if (!postResp.ok) {
-                                alert('Error al iniciar la actualización. Por favor inténtalo de nuevo.');
+                                let errMsg = 'Error al iniciar la actualización. Por favor inténtalo de nuevo.';
+                                try {
+                                    const errData = await postResp.json();
+                                    if (errData && errData.error) {
+                                        errMsg += `\nDetalle: ${errData.error}`;
+                                    }
+                                } catch (_) {}
+                                alert(errMsg);
                                 DOM.updateLoaderOverlay.style.display = 'none';
                             }
                         } catch (err) {

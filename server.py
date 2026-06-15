@@ -11,6 +11,13 @@ import glob
 import subprocess
 import atexit
 import yt_dlp
+import ssl
+
+# Crear contexto SSL que ignora la verificación de certificados para evitar errores en sistemas sin certificados actualizados
+try:
+    ssl_context = ssl._create_unverified_context()
+except AttributeError:
+    ssl_context = None
 
 VERSION = "2.4.5"
 UPDATE_URL = "https://raw.githubusercontent.com/sephirods/Giftuber_wow_lolirot/main/version.json"
@@ -198,7 +205,7 @@ class GiftuberHandler(http.server.SimpleHTTPRequestHandler):
             }
             try:
                 req = urllib.request.Request(UPDATE_URL, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=4) as response:
+                with urllib.request.urlopen(req, timeout=4, context=ssl_context) as response:
                     data = json.loads(response.read().decode('utf-8'))
                     online_version = data.get('version')
                     download_url = data.get('download_url')
@@ -294,7 +301,7 @@ class GiftuberHandler(http.server.SimpleHTTPRequestHandler):
                 
                 # Descargar el zip
                 req = urllib.request.Request(download_url, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=40) as response, open(zip_temp_path, 'wb') as out_file:
+                with urllib.request.urlopen(req, timeout=40, context=ssl_context) as response, open(zip_temp_path, 'wb') as out_file:
                     out_file.write(response.read())
                 
                 print("[*] Descarga completada. Creando script de actualización en PowerShell...")

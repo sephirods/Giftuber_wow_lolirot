@@ -24,12 +24,18 @@
         .walking-active #avatar-display { animation: walkBob 0.55s infinite ease-in-out; transform-origin: bottom center; }
         @keyframes walkBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
         #avatar-wrapper.active-elf-split #user-avatar-img {
-            clip-path: polygon(0% 0%, 100% 0%, 100% 81.0%, 0% 81.0%);
+            clip-path: polygon(
+                0% 0%, 
+                100% 0%, 
+                100% 100%, 
+                var(--legs-crop-right, 63%) 100%, 
+                var(--legs-crop-right, 63%) var(--legs-crop-y, 81.0%), 
+                var(--legs-crop-left, 37%) var(--legs-crop-y, 81.0%), 
+                var(--legs-crop-left, 37%) 100%, 
+                0% 100%
+            );
             position: relative;
             z-index: 2;
-        }
-        #avatar-wrapper.active-elf-split.avatar-lolirot_red #user-avatar-img {
-            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 59% 100%, 59% 78%, 41% 78%, 41% 100%, 0% 100%);
         }
 
         .paladin-effect-container { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:5; overflow:visible; }
@@ -970,6 +976,17 @@
             if (s.calibration) {
                 Object.assign(cal, s.calibration);
                 
+                const cropY = cal.legs_crop_y !== undefined ? cal.legs_crop_y : 81.0;
+                const cropX = cal.legs_crop_x !== undefined ? cal.legs_crop_x : 0.0;
+                
+                const halfWidth = cropX >= 0 ? 13 + cropX * 0.37 : 13 + cropX * 0.13;
+                const leftPerc = 50 - halfWidth;
+                const rightPerc = 50 + halfWidth;
+
+                userImg.style.setProperty('--legs-crop-y', `${cropY}%`);
+                userImg.style.setProperty('--legs-crop-left', `${leftPerc}%`);
+                userImg.style.setProperty('--legs-crop-right', `${rightPerc}%`);
+
                 // Actualizar en tiempo real los overlays de alas activos en OBS
                 document.querySelectorAll('.avenging-wrath-overlay').forEach(ov => {
                     ov.style.setProperty('--wings-scale', cal.wings_scale);

@@ -225,6 +225,28 @@
                             </div>
                             <input type="range" id="slider-legs-x" min="-50" max="50" step="1" value="0" style="width: 100%; cursor: pointer;">
                         </div>
+
+                        <div class="control-group" style="margin-top: 10px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
+                                <label for="slider-legs-crop-y">Recorte Vertical (Y)</label>
+                                <span id="legs-crop-y-val" style="font-weight: bold; color: var(--accent-color);">81.0%</span>
+                            </div>
+                            <input type="range" id="slider-legs-crop-y" min="0" max="100" step="0.1" value="81.0" style="width: 100%; cursor: pointer;">
+                        </div>
+
+                        <div class="control-group" style="margin-top: 10px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
+                                <label for="slider-legs-crop-x">Ancho Recorte (X)</label>
+                                <span id="legs-crop-x-val" style="font-weight: bold; color: var(--accent-color);">0.0%</span>
+                            </div>
+                            <input type="range" id="slider-legs-crop-x" min="-100" max="100" step="0.1" value="0.0" style="width: 100%; cursor: pointer;">
+                        </div>
+
+                        <div style="margin-top: 15px; text-align: center;">
+                            <button id="btn-toggle-walk-test" style="font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 700; padding: 8px 16px; background: rgba(255,121,198,0.08); border: 1px solid rgba(255,121,198,0.3); border-radius: 6px; color: var(--accent-color); cursor: pointer; transition: all 0.2s ease; width: 100%;">
+                                Caminata de Prueba: DESACTIVADA
+                            </button>
+                        </div>
                     </div>
 
 

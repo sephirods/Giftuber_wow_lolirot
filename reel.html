@@ -481,10 +481,16 @@
 
         /* Máscara de piernas para elfo de sangre (WoW Elf Split) */
         #avatar-wrapper.active-elf-split #user-avatar-img {
-            clip-path: polygon(0% 0%, 100% 0%, 100% 81.0%, 0% 81.0%);
-        }
-        #avatar-wrapper.active-elf-split.avatar-lolirot_red #user-avatar-img {
-            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 59% 100%, 59% 78%, 41% 78%, 41% 100%, 0% 100%);
+            clip-path: polygon(
+                0% 0%, 
+                100% 0%, 
+                100% 100%, 
+                var(--legs-crop-right, 63%) 100%, 
+                var(--legs-crop-right, 63%) var(--legs-crop-y, 81.0%), 
+                var(--legs-crop-left, 37%) var(--legs-crop-y, 81.0%), 
+                var(--legs-crop-left, 37%) 100%, 
+                0% 100%
+            );
         }
 
         /* ===== EFECTOS DE HABILIDADES CAZADORA DE SUPERVIVENCIA ===== */
@@ -2195,6 +2201,17 @@
                     }
                     if (calLegs.legs_y !== undefined) {
                         legsImg.style.setProperty('--legs-y', `${calLegs.legs_y}px`);
+                    }
+                    if (calLegs.legs_crop_y !== undefined) {
+                        userImg.style.setProperty('--legs-crop-y', `${calLegs.legs_crop_y}%`);
+                    }
+                    if (calLegs.legs_crop_x !== undefined) {
+                        const cropX = calLegs.legs_crop_x;
+                        const halfWidth = cropX >= 0 ? 13 + cropX * 0.37 : 13 + cropX * 0.13;
+                        const leftPerc = 50 - halfWidth;
+                        const rightPerc = 50 + halfWidth;
+                        userImg.style.setProperty('--legs-crop-left', `${leftPerc}%`);
+                        userImg.style.setProperty('--legs-crop-right', `${rightPerc}%`);
                     }
                     
                     // Configurar variables de alas para cuando se activen

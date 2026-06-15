@@ -147,6 +147,10 @@
     if (isNaN(legsTranslateY)) legsTranslateY = 22;
     let legsTranslateX = parseInt(localStorage.getItem('giftuber_legs_x'));
     if (isNaN(legsTranslateX)) legsTranslateX = 0;
+    let legsCropY = parseFloat(localStorage.getItem('giftuber_legs_crop_y'));
+    if (isNaN(legsCropY)) legsCropY = 81.0;
+    let legsCropX = parseFloat(localStorage.getItem('giftuber_legs_crop_x'));
+    if (isNaN(legsCropX)) legsCropX = 0.0;
 
     let wingsScale = parseFloat(localStorage.getItem('giftuber_wings_scale'));
     if (isNaN(wingsScale)) wingsScale = 1.0;
@@ -164,12 +168,18 @@
     styleEl.innerHTML = `
         /* Aplicar recorte a la imagen original en modo caminata para ocultar sus piernas estáticas */
         #avatar-wrapper.active-elf-split #user-avatar-img {
-            clip-path: polygon(0% 0%, 100% 0%, 100% 81.0%, 0% 81.0%);
+            clip-path: polygon(
+                0% 0%, 
+                100% 0%, 
+                100% 100%, 
+                var(--legs-crop-right, 63%) 100%, 
+                var(--legs-crop-right, 63%) var(--legs-crop-y, 81.0%), 
+                var(--legs-crop-left, 37%) var(--legs-crop-y, 81.0%), 
+                var(--legs-crop-left, 37%) 100%, 
+                0% 100%
+            );
             position: relative;
             z-index: 2;
-        }
-        #avatar-wrapper.active-elf-split.avatar-lolirot_red #user-avatar-img {
-            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 59% 100%, 59% 78%, 41% 78%, 41% 100%, 0% 100%);
         }
 
         .elf-part {
@@ -481,6 +491,7 @@
     // Heartbeat: auto-stop caminar si no llega walk_start durante 450ms
     let walkHeartbeat = null;
     let walkStopTime  = 0; // timestamp del último stopWalk, para debounce
+    let walkTestLocked = false;
 
     function startWalk() {
         fetch('/display_state', { method:'POST', headers:{'Content-Type':'application/json'},
@@ -491,6 +502,7 @@
         walkHeartbeat = setTimeout(stopWalk, 450);
     }
     function stopWalk() {
+        if (walkTestLocked) return;
         walkStopTime = Date.now(); // registrar cuándo paramos
         clearTimeout(walkHeartbeat);
         walkHeartbeat = null;
@@ -940,6 +952,18 @@
     // ================================================================
     //  SINCRONIZACIÓN DE CALIBRACIÓN CON EL SERVIDOR (nivel IIFE)
     // ================================================================
+    function applyLegsCrop() {
+        const avatarImg = document.getElementById('user-avatar-img');
+        if (avatarImg) {
+            const halfWidth = legsCropX >= 0 ? 13 + legsCropX * 0.37 : 13 + legsCropX * 0.13;
+            const leftPerc = 50 - halfWidth;
+            const rightPerc = 50 + halfWidth;
+            avatarImg.style.setProperty('--legs-crop-left', `${leftPerc}%`);
+            avatarImg.style.setProperty('--legs-crop-right', `${rightPerc}%`);
+            avatarImg.style.setProperty('--legs-crop-y', `${legsCropY}%`);
+        }
+    }
+
     function pushCalibrationToServer() {
         fetch('/display_state', {
             method: 'POST',
@@ -949,6 +973,8 @@
                     legs_scale: legsScale,
                     legs_y: legsTranslateY,
                     legs_x: legsTranslateX,
+                    legs_crop_y: legsCropY,
+                    legs_crop_x: legsCropX,
                     wings_scale: wingsScale,
                     wings_y: wingsTranslateY,
                     wings_x: wingsTranslateX,
@@ -1522,6 +1548,23 @@ UpdateWalkState() {
                         const valLbl = document.getElementById('legs-x-val');
                         if (valLbl) valLbl.textContent = legsTranslateX + 'px';
                     }
+                    if (s.calibration.legs_crop_y !== undefined) {
+                        legsCropY = s.calibration.legs_crop_y;
+                        localStorage.setItem('giftuber_legs_crop_y', legsCropY);
+                        const slider = document.getElementById('slider-legs-crop-y');
+                        if (slider) slider.value = legsCropY;
+                        const valLbl = document.getElementById('legs-crop-y-val');
+                        if (valLbl) valLbl.textContent = legsCropY.toFixed(1) + '%';
+                    }
+                    if (s.calibration.legs_crop_x !== undefined) {
+                        legsCropX = s.calibration.legs_crop_x;
+                        localStorage.setItem('giftuber_legs_crop_x', legsCropX);
+                        const slider = document.getElementById('slider-legs-crop-x');
+                        if (slider) slider.value = legsCropX;
+                        const valLbl = document.getElementById('legs-crop-x-val');
+                        if (valLbl) valLbl.textContent = legsCropX.toFixed(1) + '%';
+                    }
+                    applyLegsCrop();
                     
                     // Cargar alas
                     if (s.calibration.wings_scale !== undefined) {
@@ -1683,6 +1726,7 @@ UpdateWalkState() {
                 }
                 // Aplicar calibracion dinamica
                 legsImg.style.transform = `scale(${legsScale}) translate(${legsTranslateX}px, ${legsTranslateY}px)`;
+                applyLegsCrop();
             } else {
                 wrapper.classList.remove('active-elf-split', 'avatar-lolirot', 'avatar-lolirot_red');
                 if (legsImg) {
@@ -1729,6 +1773,52 @@ UpdateWalkState() {
                 xVal.textContent = legsTranslateX + 'px';
                 localStorage.setItem('giftuber_legs_x', legsTranslateX);
                 pushCalibrationToServer();
+            });
+        }
+
+        const cropYSlider = document.getElementById('slider-legs-crop-y');
+        const cropXSlider = document.getElementById('slider-legs-crop-x');
+        const cropYVal = document.getElementById('legs-crop-y-val');
+        const cropXVal = document.getElementById('legs-crop-x-val');
+
+        if (cropYSlider && cropYVal) {
+            cropYSlider.value = legsCropY;
+            cropYVal.textContent = legsCropY.toFixed(1) + '%';
+            cropYSlider.addEventListener('input', (e) => {
+                legsCropY = parseFloat(e.target.value);
+                cropYVal.textContent = legsCropY.toFixed(1) + '%';
+                localStorage.setItem('giftuber_legs_crop_y', legsCropY);
+                applyLegsCrop();
+                pushCalibrationToServer();
+            });
+        }
+        if (cropXSlider && cropXVal) {
+            cropXSlider.value = legsCropX;
+            cropXVal.textContent = legsCropX.toFixed(1) + '%';
+            cropXSlider.addEventListener('input', (e) => {
+                legsCropX = parseFloat(e.target.value);
+                cropXVal.textContent = legsCropX.toFixed(1) + '%';
+                localStorage.setItem('giftuber_legs_crop_x', legsCropX);
+                applyLegsCrop();
+                pushCalibrationToServer();
+            });
+        }
+
+        const btnToggleWalkTest = document.getElementById('btn-toggle-walk-test');
+        if (btnToggleWalkTest) {
+            btnToggleWalkTest.addEventListener('click', () => {
+                walkTestLocked = !walkTestLocked;
+                if (walkTestLocked) {
+                    btnToggleWalkTest.textContent = 'Caminata de Prueba: ACTIVADA';
+                    btnToggleWalkTest.style.background = 'rgba(255,121,198,0.25)';
+                    btnToggleWalkTest.style.borderColor = 'rgba(255,121,198,0.8)';
+                    startWalk();
+                } else {
+                    btnToggleWalkTest.textContent = 'Caminata de Prueba: DESACTIVADA';
+                    btnToggleWalkTest.style.background = 'rgba(255,121,198,0.08)';
+                    btnToggleWalkTest.style.borderColor = 'rgba(255,121,198,0.3)';
+                    stopWalk();
+                }
             });
         }
 
