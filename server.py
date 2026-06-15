@@ -340,9 +340,15 @@ if (Test-Path 'project_update.zip') {{
 }}
 
 # Limpiar variable de entorno de PyInstaller para evitar conflictos de DLL
-if (Test-Path env:_MEIPASS) {
+if (Test-Path env:_MEIPASS) {{
     Remove-Item env:_MEIPASS -Force
-}
+}}
+
+# Limpiar PATH de referencias a carpetas temporales antiguas _MEI
+if ($env:PATH) {{
+    $pathDirs = ($env:PATH -split ';') | Where-Object {{ $_ -notlike '*_MEI*' }}
+    $env:PATH = $pathDirs -join ';'
+}}
 
 # Iniciar la nueva versión
 {run_command}
@@ -357,6 +363,10 @@ Remove-Item 'updater.ps1' -Force
                 print("[*] Ejecutando updater.ps1 en segundo plano...")
                 env = os.environ.copy()
                 env.pop('_MEIPASS', None)
+                if 'PATH' in env:
+                    path_dirs = env['PATH'].split(os.pathsep)
+                    cleaned_dirs = [d for d in path_dirs if '_MEI' not in d]
+                    env['PATH'] = os.pathsep.join(cleaned_dirs)
                 subprocess.Popen(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "updater.ps1"], 
                                  creationflags=0x08000000, env=env)
                 
