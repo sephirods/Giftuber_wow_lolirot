@@ -2,6 +2,7 @@ import os
 import sys
 import shutil
 import subprocess
+import tempfile
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -17,10 +18,8 @@ TEXT_MUTED = "#8be9fd"
 def get_bundle_path(filename):
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, filename)
-    # Check current directory
     if os.path.exists(filename):
         return filename
-    # Check directory containing the running executable/script
     exe_dir = os.path.dirname(os.path.abspath(sys.executable if sys.executable else __file__))
     fallback = os.path.join(exe_dir, filename)
     if os.path.exists(fallback):
@@ -173,7 +172,6 @@ class GiftuberUninstallerApp:
             self.progress['value'] = 20
             self.root.update()
             
-            # Kill known processes
             processes_to_kill = ["Giftuber.exe", "AutoHotkey64.exe", "AutoHotkey.exe", "AutoHotkeyUX.exe", "AutoHotkey32.exe"]
             for proc in processes_to_kill:
                 try:
@@ -197,7 +195,7 @@ class GiftuberUninstallerApp:
                     print(f"Error removing shortcut: {e}")
                     
             # Step 3: Remove WoW Addon
-            self.status_var.set("Buscando e instalando limpieza del Addon de WoW...")
+            self.status_var.set("Eliminando el Addon de WoW (GiftuberHelper)...")
             self.progress['value'] = 60
             self.root.update()
             
@@ -209,11 +207,9 @@ class GiftuberUninstallerApp:
                     if os.path.exists(addon_dir):
                         try:
                             shutil.rmtree(addon_dir)
-                            print(f"Removed addon from {addon_dir}")
                         except Exception as e:
                             print(f"Error removing addon: {e}")
                             
-                # Fallback check direct Interface/AddOns
                 direct_addon_dir = os.path.join(wow_dir, "Interface", "AddOns", "GiftuberHelper")
                 if os.path.exists(direct_addon_dir):
                     try:
@@ -235,20 +231,54 @@ class GiftuberUninstallerApp:
                     except Exception as e:
                         print(f"Error removing user appdata directory: {e}")
                         
-            # Step 5: Self-deletion sequence
-            self.status_var.set("Programando eliminación de la carpeta principal...")
+            # Step 5: Schedule self-deletion via PowerShell temp file
+            self.status_var.set("Programando eliminación de la carpeta de instalación...")
             self.progress['value'] = 95
             self.root.update()
             
-            # Determine directory paths
-            if hasattr(sys, '_MEIPASS'):
+            # Directorio de instalación real (donde vive el .exe instalado)
+            if getattr(sys, 'frozen', False):
                 install_dir = os.path.dirname(os.path.abspath(sys.executable))
-                exe_name = os.path.basename(sys.executable)
             else:
                 install_dir = os.path.dirname(os.path.abspath(__file__))
-                exe_name = os.path.basename(__file__)
-                
-            proc_name = os.path.splitext(exe_name)[0]
+            
+            current_pid = os.getpid()
+
+            # Escapar la ruta para PowerShell (comillas simples → dobles)
+            install_dir_ps = install_dir.replace("'", "''")
+
+            # Crear script .ps1 en %TEMP% para no depender de la carpeta que vamos a borrar
+            ps_script = os.path.join(tempfile.gettempdir(), "giftuber_uninstall_cleanup.ps1")
+            ps_content = f"""# Giftuber uninstall cleanup
+$installDir = '{install_dir_ps}'
+$pid_to_wait = {current_pid}
+
+# Esperar a que el proceso desinstalador termine (por PID exacto)
+Start-Sleep -Seconds 1
+$proc = Get-Process -Id $pid_to_wait -ErrorAction SilentlyContinue
+if ($proc) {{
+    $proc.WaitForExit(10000)
+}}
+Start-Sleep -Seconds 1
+
+# Borrar la carpeta de instalación completa
+if (Test-Path $installDir) {{
+    Remove-Item -Path $installDir -Recurse -Force -ErrorAction SilentlyContinue
+}}
+
+# Auto-eliminarse
+Remove-Item -Path '{ps_script.replace("'", "''")}' -Force -ErrorAction SilentlyContinue
+"""
+            with open(ps_script, 'w', encoding='utf-8') as f:
+                f.write(ps_content)
+
+            # Lanzar el script desacoplado desde %TEMP%
+            subprocess.Popen(
+                ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ps_script],
+                creationflags=0x08000000,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
             
             self.progress['value'] = 100
             self.status_var.set("Desinstalación completada con éxito.")
@@ -256,18 +286,7 @@ class GiftuberUninstallerApp:
             
             messagebox.showinfo(
                 "Desinstalación Exitosa", 
-                "Giftuber ha sido desinstalado correctamente de tu equipo."
-            )
-            
-            # Spawn a detached PowerShell script to wait for this process to exit and then delete the install folder
-            ps_cmd = f"Start-Sleep -Seconds 2; while (Get-Process -Name '{proc_name}' -ErrorAction SilentlyContinue) {{ Start-Sleep -Seconds 1 }}; Remove-Item -Path '{install_dir}' -Recurse -Force -ErrorAction SilentlyContinue"
-            
-            # Run detached process
-            subprocess.Popen(
-                ["powershell", "-Command", ps_cmd], 
-                creationflags=0x08000000, 
-                stdout=subprocess.DEVNULL, 
-                stderr=subprocess.DEVNULL
+                f"Giftuber ha sido desinstalado correctamente.\n\nLa carpeta '{install_dir}' será eliminada al cerrar este diálogo."
             )
             
             self.root.destroy()

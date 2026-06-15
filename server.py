@@ -295,9 +295,20 @@ class GiftuberHandler(http.server.SimpleHTTPRequestHandler):
                     raise ValueError("Se requiere 'download_url'")
                 
                 print(f"[*] Descargando actualización desde: {download_url}...")
-                
-                # Definir ruta temporal para guardar el zip
-                zip_temp_path = os.path.join(os.getcwd(), 'project_update.zip')
+
+                # Directorio real de instalación (donde vive el .exe o server.py)
+                import sys
+                exe_actual = sys.executable
+                if getattr(sys, 'frozen', False):
+                    current_dir = os.path.dirname(exe_actual)
+                    run_command = f"Start-Process -FilePath '{exe_actual.replace(chr(39), chr(39)*2)}'"
+                else:
+                    current_dir = os.path.dirname(os.path.abspath(__file__))
+                    run_command = f"Start-Process -FilePath 'python' -ArgumentList 'server.py'"
+
+                # Definir rutas absolutas para el updater
+                zip_temp_path = os.path.join(current_dir, 'project_update.zip')
+                ps_script_path = os.path.join(current_dir, 'updater.ps1')
                 
                 # Descargar el zip
                 req = urllib.request.Request(download_url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -306,20 +317,20 @@ class GiftuberHandler(http.server.SimpleHTTPRequestHandler):
                 
                 print("[*] Descarga completada. Creando script de actualización en PowerShell...")
                 
-                # Definir ruta del ejecutable actual
-                import sys
-                exe_actual = sys.executable
-                if getattr(sys, 'frozen', False):
-                    current_dir = os.path.dirname(exe_actual)
-                    run_command = f"Start-Process -FilePath '{exe_actual}'"
-                else:
-                    current_dir = os.path.dirname(os.path.abspath(__file__))
-                    run_command = f"Start-Process -FilePath 'python' -ArgumentList 'server.py'"
-                
-                ps_script_path = os.path.join(current_dir, 'updater.ps1')
                 current_pid = os.getpid()
                 
+                # Escapar rutas para PowerShell (comillas simples dobles)
+                install_dir_ps  = current_dir.replace("'", "''")
+                zip_abs_ps      = zip_temp_path.replace("'", "''")
+                cal_abs_ps      = os.path.join(current_dir, 'giftuber_calibration.json').replace("'", "''")
+                cal_bak_abs_ps  = os.path.join(current_dir, 'giftuber_calibration.json.bak').replace("'", "''")
+                ps_abs_ps       = ps_script_path.replace("'", "''")
+
                 ps_content = f"""# Script de actualización de Giftuber
+# Usar siempre rutas absolutas para no depender del CWD de PowerShell
+$installDir = '{install_dir_ps}'
+Set-Location -Path $installDir
+
 Start-Sleep -Seconds 2
 $process = Get-Process -Id {current_pid} -ErrorAction SilentlyContinue
 if ($process) {{
@@ -327,21 +338,21 @@ if ($process) {{
 }}
 
 # Respaldar calibración
-if (Test-Path 'giftuber_calibration.json') {{
-    Copy-Item 'giftuber_calibration.json' 'giftuber_calibration.json.bak' -Force
+if (Test-Path '{cal_abs_ps}') {{
+    Copy-Item '{cal_abs_ps}' '{cal_bak_abs_ps}' -Force
 }}
 
-# Extraer actualización
-Expand-Archive -Path 'project_update.zip' -DestinationPath '.' -Force
+# Extraer actualización con ruta absoluta
+Expand-Archive -Path '{zip_abs_ps}' -DestinationPath '{install_dir_ps}' -Force
 
 # Restaurar calibración
-if (Test-Path 'giftuber_calibration.json.bak') {{
-    Move-Item -Force 'giftuber_calibration.json.bak' 'giftuber_calibration.json'
+if (Test-Path '{cal_bak_abs_ps}') {{
+    Move-Item -Force '{cal_bak_abs_ps}' '{cal_abs_ps}'
 }}
 
 # Eliminar el archivo zip temporal
-if (Test-Path 'project_update.zip') {{
-    Remove-Item 'project_update.zip' -Force
+if (Test-Path '{zip_abs_ps}') {{
+    Remove-Item '{zip_abs_ps}' -Force
 }}
 
 # Limpiar variables de entorno de PyInstaller para evitar conflictos de DLL
@@ -354,7 +365,7 @@ if ($env:PATH) {{
 {run_command}
 
 # Auto-eliminarse
-Remove-Item 'updater.ps1' -Force
+Remove-Item '{ps_abs_ps}' -Force -ErrorAction SilentlyContinue
 """
                 with open(ps_script_path, 'w', encoding='utf-8') as f:
                     f.write(ps_content)
@@ -367,7 +378,7 @@ Remove-Item 'updater.ps1' -Force
                     path_dirs = env['PATH'].split(os.pathsep)
                     cleaned_dirs = [d for d in path_dirs if '_MEI' not in d]
                     env['PATH'] = os.pathsep.join(cleaned_dirs)
-                subprocess.Popen(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "updater.ps1"], 
+                subprocess.Popen(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ps_script_path], 
                                  creationflags=0x08000000, env=env)
                 
                 # Responder afirmativo y cerrar la app
