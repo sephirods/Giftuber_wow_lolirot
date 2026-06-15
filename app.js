@@ -192,7 +192,13 @@ const DOM = {
     btnExportPack: document.getElementById('btn-export-pack'),
     btnImportPack: document.getElementById('btn-import-pack'),
     fileImportPack: document.getElementById('file-import-pack'),
-    btnCopyObsUrl: document.getElementById('btn-copy-obs-url')
+    btnCopyObsUrl: document.getElementById('btn-copy-obs-url'),
+    
+    // Auto-Updater elements
+    updateBanner: document.getElementById('update-banner'),
+    updateVersionLabel: document.getElementById('update-version-label'),
+    btnUpdateNow: document.getElementById('btn-update-now'),
+    updateLoaderOverlay: document.getElementById('update-loader-overlay')
 };
 
 
@@ -1126,6 +1132,52 @@ async function checkDefaultAssets() {
 }
 
 
+// --- AUTO-UPDATER ---
+async function checkUpdates() {
+    try {
+        const resp = await fetch('/check_update', { cache: 'no-store' });
+        if (!resp.ok) return;
+        const res = await resp.json();
+        
+        if (res.current_version) {
+            const footerVer = document.getElementById('app-version-footer');
+            if (footerVer) footerVer.textContent = `v${res.current_version}`;
+        }
+        
+        if (res.update_available && res.download_url) {
+            console.log(`[*] Nueva actualización disponible: v${res.new_version}`);
+            if (DOM.updateBanner && DOM.updateVersionLabel) {
+                DOM.updateVersionLabel.textContent = `v${res.new_version}`;
+                DOM.updateBanner.style.display = 'block';
+                
+                DOM.btnUpdateNow.onclick = async () => {
+                    if (confirm(`¿Estás seguro de que deseas actualizar a la versión v${res.new_version}? El programa se cerrará para aplicar los cambios.`)) {
+                        DOM.updateLoaderOverlay.style.display = 'flex';
+                        try {
+                            const postResp = await fetch('/trigger_update', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ download_url: res.download_url })
+                            });
+                            if (!postResp.ok) {
+                                alert('Error al iniciar la actualización. Por favor inténtalo de nuevo.');
+                                DOM.updateLoaderOverlay.style.display = 'none';
+                            }
+                        } catch (err) {
+                            console.error('Error al solicitar actualización:', err);
+                            alert('Error de conexión al iniciar la actualización.');
+                            DOM.updateLoaderOverlay.style.display = 'none';
+                        }
+                    }
+                };
+            }
+        }
+    } catch (err) {
+        console.error('Error en el auto-updater:', err);
+    }
+}
+
+
 // --- INICIALIZACIÓN ---
 async function init() {
     await loadSettingsFromServer();
@@ -1135,6 +1187,9 @@ async function init() {
     await checkDefaultAssets();
     await loadUploadedImages();
     startBlinkCycle();
+    
+    // Buscar actualizaciones automáticas
+    checkUpdates();
     
     console.log('Giftuber inicializado correctamente.');
 }

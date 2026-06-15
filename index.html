@@ -25,6 +25,13 @@
                     </button>
                 </div>
                 <p class="subtitle">Avatar reactivo para tu stream</p>
+                <!-- Banner de actualización (oculto por defecto) -->
+                <div id="update-banner" style="display: none; margin-top: 15px; background: linear-gradient(135deg, rgba(255, 121, 198, 0.15) 0%, rgba(189, 147, 249, 0.15) 100%); border: 1px solid var(--accent); padding: 10px; border-radius: 8px; font-size: 12px; text-align: center; box-shadow: 0 4px 10px rgba(255, 121, 198, 0.15);">
+                    <div style="font-weight: 600; color: #fff; margin-bottom: 6px;">🎁 Nueva versión <span id="update-version-label">v2.4.1</span> disponible</div>
+                    <button id="btn-update-now" class="btn-primary" style="padding: 6px 12px; font-size: 11px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;">
+                        ✨ Actualizar Ahora
+                    </button>
+                </div>
             </header>
 
             <div class="panel-scroll-area">
@@ -307,7 +314,7 @@
             </div>
             
             <footer>
-                <p>Desarrollado con ❤️ para streamers</p>
+                <p>Desarrollado con ❤️ para streamers | <span id="app-version-footer">v2.4.0</span></p>
             </footer>
         </aside>
 
@@ -406,6 +413,22 @@
             </div>
         </main>
     </div>
+
+    <!-- Pantalla de bloqueo de actualización -->
+    <div id="update-loader-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 12, 27, 0.9); z-index: 99999; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+        <div style="text-align: center; max-width: 400px; padding: 30px; background: rgba(30, 30, 45, 0.85); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <div class="spinner-icon" style="font-size: 40px; animation: spin 2s linear infinite;">🔄</div>
+            <h2 style="font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">Actualizando Giftuber</h2>
+            <p style="color: var(--text-muted); font-size: 13px; line-height: 1.5; margin: 0; text-align: center;">Descargando y extrayendo la nueva versión... La aplicación se cerrará y se volverá a abrir automáticamente. Por favor, espera.</p>
+        </div>
+    </div>
+    
+    <style>
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    </style>
 
     <!-- Cargar Script principal -->
     <script src="app.js?v=2.3"></script>
