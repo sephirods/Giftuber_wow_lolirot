@@ -12,7 +12,7 @@ import subprocess
 import atexit
 import yt_dlp
 
-VERSION = "2.4.3"
+VERSION = "2.4.4"
 UPDATE_URL = "https://raw.githubusercontent.com/sephirods/Giftuber_wow_lolirot/main/version.json"
 if os.path.exists("updater_url_config.txt"):
     try:

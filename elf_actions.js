@@ -164,7 +164,7 @@
     styleEl.innerHTML = `
         /* Aplicar recorte a la imagen original en modo caminata para ocultar sus piernas estáticas */
         #avatar-wrapper.active-elf-split #user-avatar-img {
-            clip-path: polygon(0% 0%, 100% 0%, 100% 91%, 63% 91%, 63% 86.5%, 37% 86.5%, 37% 91%, 0% 91%);
+            clip-path: polygon(0% 0%, 100% 0%, 100% 81.0%, 0% 81.0%);
             position: relative;
             z-index: 2;
         }

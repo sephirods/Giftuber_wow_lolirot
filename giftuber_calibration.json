@@ -1,7 +1,7 @@
 {
     "calibration": {
         "legs_scale": 1.08,
-        "legs_y": 6,
+        "legs_y": 10,
         "legs_x": 0,
         "wings_scale": 0.8,
         "wings_y": 60,
@@ -74,7 +74,7 @@
     "threshold": 3,
     "delay": 200,
     "activeBg": "#0d0b18",
-    "activeAvatar": "lolirot_red",
+    "activeAvatar": "lolirot",
     "colorMappings": {
         "ability1": "color_red",
         "ability2": "color_green",
