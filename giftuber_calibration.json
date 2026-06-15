@@ -1,0 +1,89 @@
+{
+    "calibration": {
+        "legs_scale": 1.08,
+        "legs_y": 6,
+        "legs_x": 0,
+        "wings_scale": 0.8,
+        "wings_y": 60,
+        "wings_x": 4,
+        "wings_pos_x": 13,
+        "abilityCalibration": {
+            "ability1": {
+                "scale": 1,
+                "x": 236,
+                "y": 146,
+                "rot": -60
+            },
+            "ability2": {
+                "scale": 1.13,
+                "x": 68,
+                "y": 178,
+                "rot": 10
+            },
+            "ability3": {
+                "scale": 1,
+                "x": 0,
+                "y": -20,
+                "rot": 0
+            },
+            "ability4": {
+                "scale": 1,
+                "x": 0,
+                "y": 0,
+                "rot": 0
+            },
+            "ability5": {
+                "scale": 1.27,
+                "x": -1,
+                "y": -231,
+                "rot": 0
+            },
+            "ability6": {
+                "scale": 1,
+                "x": 0,
+                "y": 0,
+                "rot": 1
+            },
+            "ability7": {
+                "scale": 1.37,
+                "x": 86,
+                "y": 45,
+                "rot": -2
+            },
+            "ability8": {
+                "scale": 1.09,
+                "x": 6,
+                "y": -33,
+                "rot": -1
+            },
+            "ability9": {
+                "scale": 0.92,
+                "x": 176,
+                "y": 38,
+                "rot": 0
+            }
+        }
+    },
+    "bounceHeight": 4,
+    "bounceSpeed": 190,
+    "avatarScale": 1,
+    "avatarX": 0,
+    "avatarY": 0,
+    "isGlowEnabled": true,
+    "paladin_spec": "ret",
+    "threshold": 3,
+    "delay": 200,
+    "activeBg": "#0d0b18",
+    "activeAvatar": "lolirot_red",
+    "colorMappings": {
+        "ability1": "color_red",
+        "ability2": "color_green",
+        "ability3": "color_blue",
+        "ability4": "color_yellow",
+        "ability5": "color_cyan",
+        "ability6": "color_orange",
+        "ability7": "color_magenta",
+        "ability8": "color_lime",
+        "ability9": "color_pink"
+    }
+}

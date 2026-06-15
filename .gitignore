@@ -1,0 +1,23 @@
+# PyInstaller build directories
+build/
+dist/
+*.spec
+__pycache__/
+.pytest_cache/
+
+
+# Local config & temporary files
+updater_url_config.txt
+updater.ps1
+project_update.zip
+
+# Large executable binaries & packages
+Instalador_Giftuber.exe
+Instalador_Giftuber.zip
+project_files.zip
+test_project_files.zip
+test_version.json
+
+# Large media or recording assets
+grabaciones/
+assets/temp_yt_audio.webm

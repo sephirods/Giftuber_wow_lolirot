@@ -1,0 +1,2977 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giftuber - Creador de Reels y Anuncios</title>
+    <!-- Fuentes premium de Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bungee&family=Cinzel:wght@700;900&family=Montserrat:wght@400;700;900&family=Outfit:wght@300;600;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Colores de interfaz */
+            --bg-dark: #0a0813;
+            --panel-bg: rgba(15, 12, 30, 0.75);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f3f1f9;
+            --text-muted: #a5a1b8;
+            
+            /* Colores de tema por defecto (Luz Sagrada / Paladín) */
+            --theme-primary: #ffb700;
+            --theme-secondary: #ffae00;
+            --theme-glow: rgba(255, 183, 0, 0.4);
+            --theme-gradient: linear-gradient(135deg, #2b1f08 0%, #0c0802 100%);
+            
+            /* Tipografía por defecto */
+            --font-title: 'Bebas Neue', sans-serif;
+            --font-body: 'Outfit', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== CONTENEDOR DE LA APLICACIÓN ===== */
+        #app-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* ===== PANEL DE CONFIGURACIÓN (Lado Izquierdo) ===== */
+        #settings-panel {
+            width: 380px;
+            height: 100vh;
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-right: 1px solid var(--panel-border);
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 100;
+            overflow-y: auto;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+        }
+
+        #settings-panel.hidden {
+            transform: translateX(-380px);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(to right, #ffffff, var(--theme-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        header p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .section-title {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--theme-primary);
+            margin-bottom: 12px;
+            font-weight: 800;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 6px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="text"], select {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: #fff;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: var(--theme-primary);
+            background: rgba(255, 255, 255, 0.07);
+            box-shadow: 0 0 8px var(--theme-glow);
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 10px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        button.active {
+            background: var(--theme-primary);
+            border-color: var(--theme-primary);
+            color: #000;
+            box-shadow: 0 0 10px var(--theme-glow);
+        }
+
+        button.btn-action {
+            background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%);
+            border-color: rgba(255, 183, 0, 0.2);
+        }
+        button.btn-action:hover {
+            border-color: var(--theme-primary);
+            box-shadow: 0 0 8px var(--theme-glow);
+            color: var(--theme-primary);
+        }
+
+        /* ===== TECLADO / SHORTCUT HELP ===== */
+        .shortcut-help {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: auto;
+        }
+
+        .shortcut-key {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        /* ===== LIENZO DEL REEL (Lado Derecho) ===== */
+        #canvas-area {
+            flex: 1;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: #06050b;
+        }
+
+        /* Botón flotante para mostrar/ocultar configuración */
+        #toggle-panel-btn {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            z-index: 110;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #toggle-panel-btn:hover {
+            transform: scale(1.08);
+            border-color: var(--theme-primary);
+        }
+
+        /* Contenedor del Reel (Estructura 9:16) */
+        #reel-container {
+            width: calc(100vh * (9 / 16));
+            height: 95vh;
+            max-width: 534px; /* Aprox 950px alto */
+            max-height: 950px;
+            aspect-ratio: 9 / 16;
+            background: var(--theme-gradient);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Modo Pantalla Completa sin bordes */
+        #reel-container.fullscreen {
+            width: 100vw;
+            height: 100vh;
+            max-width: none;
+            max-height: none;
+            border: none;
+            border-radius: 0;
+        }
+
+        /* Fondo Animado del Reel */
+        #reel-background {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        #reel-grad-glow {
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at center, var(--theme-glow) 0%, transparent 60%);
+            opacity: 0.5;
+            animation: pulseGlow 8s infinite alternate ease-in-out;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: scale(0.9) translate(-2%, -2%); opacity: 0.4; }
+            100% { transform: scale(1.1) translate(2%, 2%); opacity: 0.6; }
+        }
+
+        /* Partículas del fondo */
+        .ambient-particle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+            animation: floatUp var(--duration, 4s) linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(110%) scale(0.2); opacity: 0; }
+            20% { opacity: var(--max-opacity, 0.6); }
+            80% { opacity: var(--max-opacity, 0.6); }
+            100% { transform: translateY(-10%) scale(1.2); opacity: 0; }
+        }
+
+        /* ===== CONTENIDO VISUAL DEL REEL ===== */
+        #reel-content {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 60px 30px;
+        }
+
+        /* Margen de seguridad en pantalla completa */
+        #reel-container.fullscreen #reel-content {
+            padding: 80px 40px;
+        }
+
+        /* Títulos */
+        .text-overlay {
+            width: 100%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        .header-text {
+            font-family: var(--font-title);
+            font-size: 58px;
+            line-height: 0.95;
+            text-transform: uppercase;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.6), 0 0 25px var(--theme-glow);
+            letter-spacing: 1px;
+            animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .sub-header-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--theme-primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            animation: fadeIn 0.8s ease;
+        }
+
+        .footer-text {
+            font-family: var(--font-title);
+            font-size: 42px;
+            line-height: 1;
+            text-transform: uppercase;
+            color: #fff;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.6);
+            letter-spacing: 1px;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .sub-footer-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            animation: fadeIn 0.8s ease;
+        }
+
+        @keyframes slideDown {
+            0% { transform: translateY(-40px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            0% { transform: translateY(40px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        /* ===== DISEÑO DEL AVATAR Y EFECTOS ===== */
+        #avatar-viewport {
+            width: 100%;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transform: scale(1.0); /* Adaptado para contenedor base de 400px */
+            transform-origin: center center;
+            z-index: 5;
+        }
+
+        #avatar-wrapper {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translate(var(--avatar-x, 0px), var(--avatar-y, 0px)) scale(var(--avatar-scale, 1));
+            transition: transform 0.2s ease;
+        }
+
+        /* Anillo de Glow bajo el Avatar */
+        #avatar-glow-ring {
+            position: absolute;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--theme-glow) 0%, transparent 70%);
+            opacity: 0.6;
+            z-index: 1;
+            filter: blur(10px);
+            animation: breatheGlow 2.5s infinite alternate ease-in-out;
+        }
+
+        @keyframes breatheGlow {
+            0% { transform: scale(0.9); opacity: 0.4; }
+            100% { transform: scale(1.15); opacity: 0.7; }
+        }
+
+        /* Contenedor interno del Chibi */
+        #avatar-display {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: idleBreathe 3s infinite alternate ease-in-out;
+            transform-origin: bottom center;
+        }
+
+        @keyframes idleBreathe {
+            0% { transform: translateY(0) scaleY(1); }
+            100% { transform: translateY(-6px) scaleY(1.02); }
+        }
+
+        /* Para animación de Caminado */
+        .walking-active #avatar-display {
+            animation: walkBob 0.55s infinite ease-in-out !important;
+        }
+        @keyframes walkBob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .avatar-img-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            bottom: 0;
+        }
+
+        /* Z-Indexes */
+        #user-avatar-img { z-index: 2; }
+        #avatar-legs-img {
+            z-index: 3;
+            transform-origin: bottom center;
+            transform: scale(var(--legs-scale, 1)) translate(var(--legs-x, 0px), var(--legs-y, 0px));
+        }
+
+        /* Máscara de piernas para elfo de sangre (WoW Elf Split) */
+        #avatar-wrapper.active-elf-split #user-avatar-img {
+            clip-path: polygon(0% 0%, 100% 0%, 100% 91%, 63% 91%, 63% 86.5%, 37% 86.5%, 37% 91%, 0% 91%);
+        }
+        #avatar-wrapper.active-elf-split.avatar-lolirot_red #user-avatar-img {
+            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 59% 100%, 59% 78%, 41% 78%, 41% 100%, 0% 100%);
+        }
+
+        /* ===== EFECTOS DE HABILIDADES CAZADORA DE SUPERVIVENCIA ===== */
+        .paladin-effect-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 6;
+            overflow: visible;
+        }
+        
+        /* --- Survival Hunter Effects --- */
+        .hunter-spear {
+            position: absolute; width: 190px; height: 52px;
+            top: calc(20% + var(--ability1-y,0px)); left: calc(50px + var(--ability1-x,0px));
+            transform-origin: left center; opacity: 0;
+            filter: drop-shadow(0 0 8px rgba(80, 250, 123, 0.95)) drop-shadow(0 0 22px rgba(80, 250, 123, 0.6));
+            animation: spearSlash 0.45s cubic-bezier(0.1, 0.8, 0.3, 1.1) forwards;
+            z-index: 10;
+        }
+        @keyframes spearSlash {
+            0% { transform: rotate(calc(-60deg + var(--ability1-rot,0deg))) scale(var(--ability1-scale,1)); opacity: 0; }
+            15% { opacity: 1; }
+            70% { transform: rotate(calc(20deg + var(--ability1-rot,0deg))) scale(var(--ability1-scale,1)); opacity: 1; }
+            100% { transform: rotate(calc(30deg + var(--ability1-rot,0deg))) scale(var(--ability1-scale,1)); opacity: 0; }
+        }
+        .hunter-slash-arc {
+            position: absolute; width: 220px; height: 220px;
+            border: 5px solid transparent;
+            border-right-color: rgba(80, 250, 123, 0.85);
+            border-bottom-color: rgba(80, 250, 123, 0.3);
+            border-radius: 50%;
+            top: calc(20% - 100px + var(--ability1-y,0px));
+            left: calc(50px - 110px + var(--ability1-x,0px));
+            opacity: 0;
+            animation: slashArcGreen 0.4s ease-out forwards;
+            z-index: 9;
+        }
+        @keyframes slashArcGreen {
+            0% { transform: rotate(calc(-55deg + var(--ability1-rot,0deg))) scale(0.75); opacity: 0; }
+            25% { opacity: 0.9; }
+            100% { transform: rotate(calc(15deg + var(--ability1-rot,0deg))) scale(1.08); opacity: 0; }
+        }
+
+        .hunter-bomb {
+            position: absolute; width: calc(85px * var(--ability2-scale,1)); height: calc(85px * var(--ability2-scale,1));
+            top: var(--ability2-y, 25%); left: var(--ability2-x, -30px);
+            opacity: 0;
+            animation: bombThrow 0.5s ease-in forwards;
+            z-index: 10;
+        }
+        @keyframes bombThrow {
+            0% { transform: translate(0px, 0px) rotate(var(--ability2-rot, 0deg)) scale(0.4); opacity: 0; }
+            30% { opacity: 1; }
+            100% { transform: translate(200px, 200px) rotate(calc(360deg + var(--ability2-rot, 0deg))) scale(1); opacity: 1; }
+        }
+        .hunter-fire-cone {
+            position: absolute;
+            width: calc(400px * var(--ability2-scale, 1));
+            height: calc(400px * var(--ability2-scale, 1));
+            top: calc(200px + var(--ability2-y, 100px) - (200px * var(--ability2-scale, 1)));
+            left: calc(200px + var(--ability2-x, -30px) - (200px * var(--ability2-scale, 1)));
+            background: radial-gradient(circle, rgba(255, 85, 85, 0.4) 0%, rgba(80, 250, 123, 0.25) 50%, transparent 80%);
+            opacity: 0;
+            transform-origin: center center;
+            animation: fireExplosion 1.0s ease-out forwards;
+            pointer-events: none;
+            z-index: 4;
+            filter: blur(4px) drop-shadow(0 0 15px rgba(80, 250, 123, 0.5));
+        }
+        @keyframes fireExplosion {
+            0% { transform: scale(0) rotate(var(--ability2-rot, 0deg)); opacity: 0; }
+            15% { transform: scale(1.1) rotate(var(--ability2-rot, 0deg)); opacity: 0.95; }
+            80% { transform: scale(1.05) rotate(var(--ability2-rot, 0deg)); opacity: 0.85; }
+            100% { transform: scale(1.2) translateY(20px) rotate(var(--ability2-rot, 0deg)); opacity: 0; }
+        }
+
+        .hunter-tar-trap {
+            position: absolute; width: calc(140px * var(--ability3-scale,1)); height: calc(60px * var(--ability3-scale,1));
+            bottom: var(--ability3-y, -20px); left: calc(50% - (70px * var(--ability3-scale,1)) + var(--ability3-x, 0px));
+            opacity: 0;
+            animation: trapSnap 4.5s ease-out forwards;
+            z-index: 3;
+        }
+        @keyframes trapSnap {
+            0% { transform: translateY(-150px) scale(0.3) rotate(-90deg); opacity: 0; }
+            10% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+            12% { transform: scaleY(0.6); }
+            15% { transform: scaleY(1); }
+            85% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .hunter-tar-puddle {
+            position: absolute; width: calc(380px * var(--ability3-scale,1)); height: calc(100px * var(--ability3-scale,1));
+            bottom: var(--ability3-y,-20px); left: calc(50% - (190px * var(--ability3-scale,1)) + var(--ability3-x,0px));
+            background: radial-gradient(ellipse at center, rgba(10, 10, 15, 0.85) 0%, rgba(30, 30, 40, 0.5) 50%, transparent 70%);
+            border-radius: 50%;
+            border: 2px dashed rgba(80, 250, 123, 0.3);
+            opacity: 0;
+            transform: scale(0.5);
+            animation: puddleExpand 4.5s ease-out forwards;
+            z-index: 2;
+        }
+        @keyframes puddleExpand {
+            0% { transform: scale(0.2) rotate(var(--ability3-rot, 0deg)); opacity: 0; }
+            12% { transform: scale(1) rotate(var(--ability3-rot, 0deg)); opacity: 1; }
+            85% { opacity: 1; }
+            100% { transform: scale(1.1) rotate(var(--ability3-rot, 0deg)); opacity: 0; }
+        }
+
+        .butterfly-wrath-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1; overflow: visible;
+            transform: scale(var(--wings-scale, 1));
+            transform-origin: center center;
+        }
+        .butterfly-wing { position:absolute; width:220px; height:280px; top:var(--wings-y,60px); opacity:0; filter:drop-shadow(0 0 18px rgba(255,121,198,.9)); left:50%; transform-origin:bottom left; }
+        .butterfly-wing.left  { margin-left:calc(-24px - var(--wings-x,-12px) + var(--wings-pos-x,0px)); animation:wingAppearL 20s ease-out forwards; }
+        .butterfly-wing.right { margin-left:calc(var(--wings-x,-12px) + var(--wings-pos-x,0px)); animation:wingAppearR 20s ease-out forwards; }
+        .butterfly-aura { position:absolute; border-radius:50%; width:340px; height:340px; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); background:radial-gradient(circle,rgba(255,121,198,.35) 0%,rgba(189,147,249,.12) 50%,transparent 70%); box-shadow:0 0 60px 30px rgba(255,121,198,.25); animation:auraExpand 20s ease-out forwards; }
+        @keyframes wingAppearR {
+            0%   { opacity:0; transform: scale(0.2) rotate(var(--ability4-rot, 0deg)); }
+            7%   { opacity:1; transform: scale(1.05) rotate(var(--ability4-rot, 0deg)); }
+            10%  { transform: scale(1) rotate(var(--ability4-rot, 0deg)); }
+            93%  { opacity:1; }
+            100% { opacity:0; transform: scale(0.95) rotate(var(--ability4-rot, 0deg)); }
+        }
+        @keyframes wingAppearL {
+            0%   { opacity:0; transform: scaleX(-0.2) scaleY(0.2) rotate(calc(-1 * var(--ability4-rot, 0deg))); }
+            7%   { opacity:1; transform: scaleX(-1.05) scaleY(1.05) rotate(calc(-1 * var(--ability4-rot, 0deg))); }
+            10%  { transform: scaleX(-1) scaleY(1) rotate(calc(-1 * var(--ability4-rot, 0deg))); }
+            93%  { opacity:1; }
+            100% { opacity:0; transform: scaleX(-1) scaleY(0.95) rotate(calc(-1 * var(--ability4-rot, 0deg))); }
+        }
+        @keyframes auraExpand {
+            0%   { transform: translate(-50%,-50%) scale(0); opacity: 0; }
+            7%   { transform: translate(-50%,-50%) scale(1.2); opacity: 1; }
+            12%  { transform: translate(-50%,-50%) scale(1); }
+            93%  { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%,-50%) scale(1); }
+        }
+        
+        .butterfly-wrath-overlay.calibrating .butterfly-wing {
+            opacity: 0.95 !important;
+            animation: none !important;
+        }
+        .butterfly-wrath-overlay.calibrating .butterfly-wing.left {
+            transform: scaleX(-1) rotate(calc(-1 * var(--ability4-rot, 0deg))) !important;
+        }
+        .butterfly-wrath-overlay.calibrating .butterfly-wing.right {
+            transform: scale(1) rotate(var(--ability4-rot, 0deg)) !important;
+        }
+        .butterfly-wrath-overlay.calibrating .butterfly-aura {
+            transform: translate(-50%,-50%) scale(1) !important;
+            opacity: 0.8 !important;
+            animation: none !important;
+        }
+
+        .hunter-mend-pet {
+            position: absolute;
+            width: calc(100px * var(--ability5-scale, 1));
+            height: calc(80px * var(--ability5-scale, 1));
+            top: calc(50% - (40px * var(--ability5-scale, 1)) + var(--ability5-y, 0px));
+            left: calc(50% - (50px * var(--ability5-scale, 1)) + var(--ability5-x, 0px));
+            opacity: 0; filter: drop-shadow(0 0 20px rgba(80, 250, 123, 0.95));
+            animation: petMendFloat 2.0s ease-in-out forwards;
+            z-index: 10;
+        }
+        @keyframes petMendFloat {
+            0%   { transform: translateY(40px) scale(0.5) rotate(calc(-10deg + var(--ability5-rot, 0deg))); opacity: 0; }
+            15%  { transform: translateY(0) scale(1.1) rotate(calc(5deg + var(--ability5-rot, 0deg))); opacity: 1; }
+            50%  { transform: translateY(-10px) scale(1) rotate(calc(-5deg + var(--ability5-rot, 0deg))); opacity: 1; }
+            85%  { transform: translateY(0) scale(1.05) rotate(calc(3deg + var(--ability5-rot, 0deg))); opacity: 1; }
+            100% { transform: translateY(-30px) scale(0.7) rotate(calc(10deg + var(--ability5-rot, 0deg))); opacity: 0; }
+        }
+
+        .hunter-turtle-shell {
+            position: absolute;
+            width: calc(400px * var(--ability6-scale, 1));
+            height: calc(400px * var(--ability6-scale, 1));
+            top: calc(50% - (200px * var(--ability6-scale, 1)) + var(--ability6-y, 0px));
+            left: calc(50% - (200px * var(--ability6-scale, 1)) + var(--ability6-x, 0px));
+            opacity: 0;
+            animation: shellActivate 8s ease-in-out forwards;
+            pointer-events: none;
+            z-index: 6;
+        }
+        @keyframes shellActivate {
+            0%   { transform: scale(0.4) rotate(var(--ability6-rot, 0deg)); opacity: 0; }
+            10%  { transform: scale(1.05) rotate(var(--ability6-rot, 0deg)); opacity: 1; }
+            20%  { transform: scale(0.98) rotate(var(--ability6-rot, 0deg)); opacity: 1; }
+            85%  { transform: scale(1.02) rotate(var(--ability6-rot, 0deg)); opacity: 1; }
+            100% { transform: scale(0.8) rotate(var(--ability6-rot, 0deg)); opacity: 0; }
+        }
+
+        .hunter-harpoon {
+            position: absolute;
+            width: calc(240px * var(--ability7-scale, 1));
+            height: calc(80px * var(--ability7-scale, 1));
+            top: calc(50% - (40px * var(--ability7-scale, 1)) + var(--ability7-y, 0px));
+            left: calc(50% - (120px * var(--ability7-scale, 1)) + var(--ability7-x, 0px));
+            opacity: 0;
+            animation: harpoonLaunch 1.0s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+            z-index: 10;
+        }
+        @keyframes harpoonLaunch {
+            0% { transform: rotate(var(--ability7-rot, 0deg)) translate(-300px, 0px) scale(0.5); opacity: 0; }
+            15% { transform: rotate(var(--ability7-rot, 0deg)) translate(0px, 0px) scale(1.1); opacity: 1; }
+            50% { transform: rotate(var(--ability7-rot, 0deg)) translate(150px, 0px) scale(1); opacity: 1; }
+            80% { transform: rotate(var(--ability7-rot, 0deg)) translate(150px, 0px) scale(1); opacity: 1; }
+            100% { transform: rotate(var(--ability7-rot, 0deg)) translate(300px, 0px) scale(0.6); opacity: 0; }
+        }
+
+        .hunter-pet-slash {
+            position: absolute;
+            width: calc(300px * var(--ability8-scale, 1));
+            height: calc(300px * var(--ability8-scale, 1));
+            top: calc(50% - (150px * var(--ability8-scale, 1)) + var(--ability8-y, 0px));
+            left: calc(50% - (150px * var(--ability8-scale, 1)) + var(--ability8-x, 0px));
+            opacity: 0;
+            animation: clawSlash 0.8s cubic-bezier(0.15, 0.85, 0.35, 1.1) forwards;
+            z-index: 10;
+        }
+        @keyframes clawSlash {
+            0% { transform: scale(0.4) rotate(var(--ability8-rot, 0deg)); opacity: 0; }
+            15% { transform: scale(1.1) rotate(var(--ability8-rot, 0deg)); opacity: 1; }
+            60% { transform: scale(1) rotate(var(--ability8-rot, 0deg)); opacity: 1; }
+            100% { transform: scale(0.8) rotate(var(--ability8-rot, 0deg)); opacity: 0; }
+        }
+
+        .avenging-flash {
+            position: absolute;
+            width: 320px; height: 320px;
+            border-radius: 50%;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(255, 121, 198, 0.75) 0%, rgba(189, 147, 249, 0.35) 45%, transparent 70%);
+            pointer-events: none;
+            z-index: 99;
+            animation: flashFade 0.45s ease-out forwards;
+        }
+        @keyframes flashFade {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(0.2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        .holy-particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #50fa7b;
+            border-radius: 50%;
+            filter: drop-shadow(0 0 5px #8be9fd);
+            opacity: 0;
+            animation: floatHoly 0.8s ease-out forwards;
+            z-index: 12;
+        }
+        @keyframes floatHoly {
+            0% { transform: translate(0,0) scale(1); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+        }
+
+
+        .hunter-boomstick {
+            position: absolute;
+            pointer-events: none;
+            z-index: 15;
+            filter: drop-shadow(0 0 14px rgba(255, 200, 50, 0.8));
+        }
+        .hunter-boomstick-pellet {
+            position: absolute;
+            height: 3px;
+            width: 0px;
+            background: linear-gradient(to right, rgba(255,230,100,0) 0%, #f1fa8c 40%, #ffffff 100%);
+            opacity: 0;
+            transform-origin: left center;
+            z-index: 16;
+            border-radius: 1.5px;
+            box-shadow: 0 0 5px 1px rgba(241,250,140,0.7);
+            animation: pelletTrail 0.34s ease-out forwards;
+        }
+
+        .hunter-boomstick-flash {
+            position: absolute;
+            width: 56px;
+            height: 46px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffffff 0%, #f1fa8c 32%, #ffb86c 62%, rgba(255,85,85,0) 100%);
+            transform: translate(-50%, -50%);
+            filter: drop-shadow(0 0 12px #f1fa8c) drop-shadow(0 0 22px #ffb86c);
+            pointer-events: none;
+            z-index: 17;
+            opacity: 0;
+            animation: muzzleFlash 0.26s ease-out forwards;
+        }
+        @keyframes muzzleFlash {
+            0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.15); }
+            14%  { opacity: 1; transform: translate(-50%, -50%) scale(1.35); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+        }
+        @keyframes pelletTrail {
+            0%   { width: 0px;   opacity: 0; }
+            10%  { width: 25px;  opacity: 1; }
+            55%  { width: 95px;  opacity: 0.9; }
+            100% { width: 115px; opacity: 0; }
+        }
+
+        /* Agite de pantalla */
+        .shake-active {
+            animation: viewportShake 0.3s ease-in-out;
+        }
+        @keyframes viewportShake {
+            0%, 100% { transform: scale(1.3) translate(0, 0); }
+            15% { transform: scale(1.3) translate(-8px, 4px); }
+            30% { transform: scale(1.3) translate(8px, -4px); }
+            45% { transform: scale(1.3) translate(-6px, -2px); }
+            60% { transform: scale(1.3) translate(6px, 2px); }
+            75% { transform: scale(1.3) translate(-3px, 1px); }
+            90% { transform: scale(1.3) translate(2px, -1px); }
+        }
+
+        /* Efecto de Brillo de Calva (Estilo Anime) */
+        .bald-shine-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            display: none;
+        }
+
+        /* Contenedor de la línea de brillo del cráneo (con máscara y clip) */
+        .bald-sheen-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            -webkit-mask-image: var(--avatar-mask-url);
+            mask-image: var(--avatar-mask-url);
+            -webkit-mask-size: contain;
+            mask-size: contain;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            
+            clip-path: ellipse(18% 16% at 50% 26%);
+            overflow: hidden;
+        }
+
+        /* Línea arqueada de brillo */
+        .bald-sheen-line {
+            position: absolute;
+            top: 13%;
+            left: 36%;
+            width: 28%;
+            height: 15%;
+            border-top: 6px solid rgba(255, 255, 255, 0.95);
+            border-radius: 50% 50% 0 0;
+            filter: blur(1.5px) drop-shadow(0 0 4px rgba(255, 255, 255, 0.6));
+            transform: scaleX(0);
+            opacity: 0;
+            transform-origin: center top;
+        }
+
+        /* Contenedor de la estrellita (fuera del clip-path para que sobresalga de la cabeza) */
+        .bald-sparkle-container {
+            position: absolute;
+            top: 19%;
+            left: 61%;
+            width: 60px;
+            height: 60px;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            z-index: 10;
+        }
+
+        /* Halo circular expansivo */
+        .bald-sparkle-halo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.85);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Animaciones al activar la clase .shining */
+        .bald-shine-effect.shining .bald-sheen-line {
+            animation: baldSheenKeyframe 1.2s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+
+        .bald-shine-effect.shining .bald-sparkle-container {
+            animation: baldSparkleKeyframe 1.2s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+
+        .bald-shine-effect.shining .bald-sparkle-halo {
+            animation: baldHaloKeyframe 1.2s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+
+        @keyframes baldSheenKeyframe {
+            0% {
+                transform: scaleX(0);
+                opacity: 0;
+            }
+            25% {
+                transform: scaleX(1);
+                opacity: 0.95;
+            }
+            70% {
+                transform: scaleX(1.05);
+                opacity: 0.95;
+            }
+            100% {
+                transform: scaleX(1.1);
+                opacity: 0;
+            }
+        }
+
+        @keyframes baldSparkleKeyframe {
+            0% {
+                transform: translate(-50%, -50%) scale(0) rotate(-45deg);
+                opacity: 0;
+            }
+            12% {
+                transform: translate(-50%, -50%) scale(0) rotate(-45deg);
+                opacity: 0;
+            }
+            38% {
+                transform: translate(-50%, -50%) scale(1.2) rotate(45deg);
+                opacity: 1;
+                filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.95));
+            }
+            70% {
+                transform: translate(-50%, -50%) scale(1.0) rotate(90deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(0.5) rotate(135deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes baldHaloKeyframe {
+            0%, 18% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+            40% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 0.85;
+            }
+            80% {
+                transform: translate(-50%, -50%) scale(2.0);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2.0);
+                opacity: 0;
+        }
+        
+        /* Ocultar el cursor sobre el reel durante la grabación activa */
+        body.recording-active #reel-container,
+        body.recording-active #reel-container * {
+            cursor: none !important;
+        }
+
+        /* Overlay de Cuenta Regresiva Premium */
+        #countdown-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            color: #ff5555;
+            font-family: 'Outfit', sans-serif;
+            font-size: 150px;
+            font-weight: 800;
+            text-shadow: 0 0 30px rgba(255, 85, 85, 0.6);
+            pointer-events: none;
+        }
+        .countdown-zoom {
+            animation: countdownPulse 1s ease-out infinite;
+        }
+        @keyframes countdownPulse {
+            0% { transform: scale(0.4); opacity: 0; }
+            40% { transform: scale(1.1); opacity: 1; }
+            80% { transform: scale(1.0); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0; }
+        }
+
+        /* Barra de Volumen */
+        .volume-bar-container {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--panel-border);
+            margin-top: 5px;
+        }
+
+        #volume-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #50fa7b 0%, #bd93f9 100%);
+            border-radius: 6px;
+            transition: width 0.05s ease;
+        }
+
+        #volume-threshold-marker {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 15%; /* Enlazado dinámicamente con JS */
+            width: 2px;
+            background-color: #ff5555;
+            box-shadow: 0 0 5px #ff5555;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="countdown-overlay">
+        <div id="countdown-number" class="countdown-zoom">5</div>
+    </div>
+
+    <div id="app-container">
+        
+        <!-- ===== PANEL DE CONTROL DE REELS ===== -->
+        <aside id="settings-panel">
+            <header>
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 8px;">
+                    <h1 style="margin: 0; font-size: 20px;">🎬 Reel Studio</h1>
+                    <a href="index.html" class="btn-secondary" style="margin: 0; padding: 5px 10px; font-size: 11px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; color: var(--text-color); border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); font-weight: 600;">
+                        🎙️ Volver al Stream
+                    </a>
+                </div>
+                <p style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 4px 0 0 0;">
+                    Crea videos promocionales e historias 
+                    <span id="sync-status-indicator" style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(255,255,255,0.06); color: var(--text-muted);">🔄 Conectando...</span>
+                </p>
+            </header>
+
+            <!-- Textos del Reel -->
+            <section>
+                <div class="section-title">Contenido de Textos</div>
+                
+                <div class="control-group">
+                    <label for="input-header">Texto Superior (Título)</label>
+                    <input type="text" id="input-header" value="¡ESTA NOCHE!">
+                </div>
+
+                <div class="control-group">
+                    <label for="input-sub-header">Texto Secundario Superior</label>
+                    <input type="text" id="input-sub-header" value="Prendemos Directo">
+                </div>
+
+                <div class="control-group">
+                    <label for="input-footer">Texto Inferior (Hora/Juego)</label>
+                    <input type="text" id="input-footer" value="20:00 (ESP)">
+                </div>
+
+                <div class="control-group">
+                    <label for="input-sub-footer">Texto Secundario Inferior</label>
+                    <input type="text" id="input-sub-footer" value="Twitch.tv/TuCanal">
+                </div>
+            </section>
+
+            <!-- Personalización Visual -->
+            <section>
+                <div class="section-title">Personalización</div>
+                
+                <div class="control-group">
+                    <label for="select-theme">Tema de Color</label>
+                    <select id="select-theme">
+                        <option value="lolirot" selected>Lolirot (Verde y Celeste)</option>
+                        <option value="bloodelf">Elfo de Sangre (Rojo y Oro)</option>
+                        <option value="void">Sombra del Vacío (Morado)</option>
+                        <option value="phoenix">Fénix del Sol (Naranja)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="select-font">Tipografía de Título</label>
+                    <select id="select-font">
+                        <option value="bebas">Bebas Neue (Moderna / Impacto)</option>
+                        <option value="bungee">Bungee (Retro / Gaming)</option>
+                        <option value="cinzel">Cinzel (Fantasía / WoW)</option>
+                        <option value="montserrat">Montserrat (Estilizada / Limpia)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="select-avatar-type">Avatar Utilizado</label>
+                    <select id="select-avatar-type">
+                        <option value="lolirot" selected>Lolirot Chibi (Cazadora Supervivencia)</option>
+                        <option value="lolirot_red">Lolirot Chibi (Traje Rojo)</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- Control del Personaje -->
+            <section>
+                <div class="section-title">Estado del Avatar</div>
+                <div class="btn-grid">
+                    <button id="btn-state-idle" class="active">Silencio</button>
+                    <button id="btn-state-speaking">Hablando</button>
+                    <button id="btn-state-walking">Caminando</button>
+                    <button id="btn-state-fullscreen">Pantalla Completa</button>
+                </div>
+                <button id="btn-toggle-reactivity" style="width: 100%; margin-top: 10px; font-weight: bold;" class="active">
+                    🎙️ Control: Por Voz
+                </button>
+            </section>
+
+            <!-- Disparador de Habilidades -->
+            <section>
+                <div class="section-title">Efectos Mágicos</div>
+                <div class="btn-grid" style="margin-bottom: 10px;">
+                    <button class="btn-action" onclick="triggerAbility('ability1')" title="Golpe de Raptor">🏹 Golpe Raptor</button>
+                    <button class="btn-action" onclick="triggerAbility('ability2')" title="Bomba de Fuego Salvaje">💣 Bomba Salvaje</button>
+                    <button class="btn-action" onclick="triggerAbility('ability3')" title="Trampa de Alquitrán">🕸️ Alquitrán</button>
+                    <button class="btn-action" onclick="triggerAbility('ability4')" title="Takedown">💥 Takedown</button>
+                    <button class="btn-action" onclick="triggerAbility('ability5')" title="Aliviar Mascota">🐾 Aliviar Masc.</button>
+                    <button class="btn-action" onclick="triggerAbility('ability6')" title="Aspecto de la Tortuga">🐢 Asp. Tortuga</button>
+                    <button class="btn-action" onclick="triggerAbility('ability7')" title="Arpón">⚓ Arpón</button>
+                    <button class="btn-action" onclick="triggerAbility('ability8')" title="Comando de Matar">🦁 Comando Matar</button>
+                    <button class="btn-action" onclick="triggerAbility('ability9')" title="Boomstick">🔫 Boomstick</button>
+                </div>
+                <button id="btn-cinematic-mode" style="width: 100%;" class="btn-secondary">
+                    🎥 Bucle Cinemático Auto: OFF
+                </button>
+                <div id="reel-bald-shine-container" style="margin-top: 10px; display: none;">
+                    <button class="btn-action" style="width: 100%; border-color: var(--theme-primary); font-weight: bold;" onclick="triggerAbility('bald_shine')">
+                        ✨ Brillar Calva
+                    </button>
+                </div>
+            </section>
+
+            <!-- Audio y Mezclador -->
+            <section style="background: rgba(189, 147, 249, 0.05); border: 1px solid rgba(189, 147, 249, 0.2);">
+                <div class="section-title" style="color: var(--theme-primary); display: flex; align-items: center; gap: 6px;">
+                    <span>🎙️</span> Sonido y Micrófono
+                </div>
+                
+                <button id="btn-mic-auth" class="btn-primary" style="width: 100%; margin-bottom: 10px;">
+                    ⚡ Activar Micrófono
+                </button>
+
+                <!-- Selector de Dispositivo de Entrada -->
+                <div class="control-group" id="select-mic-container" style="display: none; margin-bottom: 10px;">
+                    <label for="select-mic-reel" style="font-size: 11px; display: block; margin-bottom: 4px;">Dispositivo de Entrada</label>
+                    <select id="select-mic-reel" style="width: 100%; font-size: 11px; padding: 6px; border-radius: 6px; background: #1e1e2d; color: #fff; border: 1px solid var(--border-color); cursor: pointer;">
+                        <option value="">Selecciona un micrófono...</option>
+                    </select>
+                </div>
+
+                <!-- Controles de volumen de voz (ocultos hasta activar mic) -->
+                <div id="mic-controls" style="display: none; margin-bottom: 15px;">
+                    <div class="control-group">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                            <label for="slider-mic-gain">Volumen del Micrófono</label>
+                            <span id="mic-gain-val">100%</span>
+                        </div>
+                        <input type="range" id="slider-mic-gain" min="0" max="2" step="0.1" value="1.0" style="width: 100%; cursor: pointer;">
+                    </div>
+
+                    <!-- Visualización del volumen en tiempo real -->
+                    <div class="control-group" style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                            <label>Volumen Actual</label>
+                            <span id="volume-val">0%</span>
+                        </div>
+                        <div class="volume-bar-container">
+                            <div id="volume-bar-fill"></div>
+                            <div id="volume-threshold-marker"></div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                            <label for="slider-mic-threshold">Umbral de Voz (Sensibilidad)</label>
+                            <span id="mic-threshold-val">15%</span>
+                        </div>
+                        <input type="range" id="slider-mic-threshold" min="1" max="100" value="15" style="width: 100%; cursor: pointer;">
+                    </div>
+                </div>
+
+                <!-- Música de fondo -->
+                <div class="control-group" style="margin-top: 10px;">
+                    <label style="font-size: 11px; display: block; margin-bottom: 4px;">🎵 Música de Fondo (MP3)</label>
+                    <input type="file" id="file-bg-music" accept="audio/*" style="font-size: 11px; width: 100%; margin-bottom: 8px;">
+                    
+                    <!-- Enlace de YouTube -->
+                    <label style="font-size: 11px; display: block; margin-bottom: 4px;">🔗 O Enlace de YouTube</label>
+                    <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                        <input type="text" id="input-yt-url" placeholder="https://www.youtube.com/watch?v=..." style="font-size: 11px; padding: 6px; flex: 1; border-radius: 6px; background: #1e1e2d; border: 1px solid var(--panel-border); color: #fff; outline: none; width: 100%;">
+                        <button id="btn-load-yt" style="padding: 6px 12px; font-size: 11px; margin: 0; white-space: nowrap; border-radius: 6px;">Cargar</button>
+                    </div>
+                    <span id="yt-load-status" style="font-size: 10px; color: var(--text-muted); display: block; margin-bottom: 10px;"></span>
+
+                    <div id="music-playback-controls" style="display: none; margin-top: 5px;">
+                        <!-- Barra de control de tiempo de la música -->
+                        <div class="control-group" style="margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px;">
+                                <span id="music-current-time" style="color: var(--text-muted);">0:00</span>
+                                <span id="music-total-time" style="color: var(--text-muted);">0:00</span>
+                            </div>
+                            <input type="range" id="slider-music-time" min="0" max="100" value="0" style="width: 100%; cursor: pointer;">
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                            <label for="slider-music-gain">Volumen de Música</label>
+                            <span id="music-gain-val">30%</span>
+                        </div>
+                        <input type="range" id="slider-music-gain" min="0" max="1" step="0.05" value="0.3" style="width: 100%; cursor: pointer;">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Grabador de Video Integrado -->
+            <section style="background: rgba(255, 85, 85, 0.05); border: 1px solid rgba(255, 85, 85, 0.2);">
+                <div class="section-title" style="color: #ff5555; display: flex; align-items: center; gap: 6px;">
+                    <span>📹</span> Grabador de Video
+                </div>
+                <!-- Selector de duración máxima de la grabación -->
+                <div class="control-group" style="margin-bottom: 10px;">
+                    <label for="select-record-duration" style="font-size: 11px; display: block; margin-bottom: 4px;">⏱️ Duración de Clip</label>
+                    <select id="select-record-duration" style="width: 100%; font-size: 11px; padding: 6px; border-radius: 6px; background: #1e1e2d; color: #fff; border: 1px solid var(--border-color); cursor: pointer;">
+                        <option value="0">Libre (Detener manual)</option>
+                        <option value="15">15 Segundos (TikTok / Shorts)</option>
+                        <option value="30">30 Segundos</option>
+                        <option value="60">60 Segundos (Reel)</option>
+                        <option value="90">90 Segundos</option>
+                    </select>
+                </div>
+
+                <button id="btn-record-reel" style="width: 100%; background: linear-gradient(135deg, #ff5555 0%, #ff79c6 100%); color: #fff; font-weight: bold; border: none; padding: 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(255, 85, 85, 0.2); margin-top: 5px;">
+                    🔴 Grabar Clip (WebM)
+                </button>
+                <p class="help-text" style="margin-top: 8px; font-size: 10px; line-height: 1.4; color: var(--text-muted);">
+                    Graba esta pestaña del navegador directamente. Al detenerla, se descargará un archivo de video <strong>.webm</strong> de alta calidad.
+                </p>
+            </section>
+
+            <div class="shortcut-help">
+                Pulsa <span class="shortcut-key">H</span> en tu teclado para ocultar este panel y poder grabar con OBS sin interfaz.
+            </div>
+        </aside>
+
+        <!-- ===== LIENZO DEL REEL ===== -->
+        <main id="canvas-area">
+            
+            <!-- Botón flotante para reabrir panel si está oculto -->
+            <button id="toggle-panel-btn" title="Mostrar/Ocultar Panel">⚙️</button>
+
+            <!-- Contenedor 9:16 -->
+            <div id="reel-container">
+                
+                <!-- Fondo animado -->
+                <div id="reel-background">
+                    <div id="reel-grad-glow"></div>
+                </div>
+
+                <!-- Contenido overlay -->
+                <div id="reel-content">
+                    
+                    <!-- Textos superiores -->
+                    <div class="text-overlay">
+                        <span class="sub-header-text" id="disp-sub-header">Prendemos Directo</span>
+                        <h2 class="header-text" id="disp-header">¡ESTA NOCHE!</h2>
+                    </div>
+
+                    <!-- Personaje con Efectos -->
+                    <div id="avatar-viewport">
+                        <div id="avatar-wrapper">
+                            
+                            <div id="avatar-glow-ring"></div>
+                            
+                            <div id="avatar-display">
+                                <!-- Capa Base (Cuerpo/Cabeza) -->
+                                <img id="user-avatar-img" class="avatar-img-layer" src="assets/lolirot/wow_chibi_idle.png" alt="Avatar">
+                                <!-- Capa Piernas (Caminata) -->
+                                <img id="avatar-legs-img" class="avatar-img-layer" src="assets/lolirot/wow_chibi_legs_walk_1.png" style="display: none;" alt="Legs">
+                                 <div class="bald-shine-effect">
+                                    <div class="bald-sheen-container">
+                                        <div class="bald-sheen-line"></div>
+                                    </div>
+                                    <div class="bald-sparkle-container">
+                                        <div class="bald-sparkle-halo"></div>
+                                        <svg viewBox="0 0 100 100" class="bald-sparkle-star" style="width: 100%; height: 100%;">
+                                            <path d="M 50,0 Q 50,50 100,50 Q 50,50 50,100 Q 50,50 0,50 Q 50,50 50,0 Z" fill="#fff" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Contenedor de habilidades -->
+                            <div class="paladin-effect-container"></div>
+                        </div>
+                    </div>
+
+                    <!-- Textos inferiores -->
+                    <div class="text-overlay">
+                        <h2 class="footer-text" id="disp-footer">20:00 (ESP)</h2>
+                        <span class="sub-footer-text" id="disp-sub-footer">Twitch.tv/TuCanal</span>
+                    </div>
+
+                </div>
+
+            </div>
+        </main>
+
+    </div>
+
+    <!-- ===== CONTROL LÓGICO DEL REEL ===== -->
+    <script>
+        // Referencias del DOM
+        const settingsPanel = document.getElementById('settings-panel');
+        const reelContainer = document.getElementById('reel-container');
+        const togglePanelBtn = document.getElementById('toggle-panel-btn');
+        
+        // Elementos de texto
+        const inputHeader = document.getElementById('input-header');
+        const inputSubHeader = document.getElementById('input-sub-header');
+        const inputFooter = document.getElementById('input-footer');
+        const inputSubFooter = document.getElementById('input-sub-footer');
+
+        const dispHeader = document.getElementById('disp-header');
+        const dispSubHeader = document.getElementById('disp-sub-header');
+        const dispFooter = document.getElementById('disp-footer');
+        const dispSubFooter = document.getElementById('disp-sub-footer');
+
+        // Controles de personalización
+        const selectTheme = document.getElementById('select-theme');
+        const selectFont = document.getElementById('select-font');
+        const selectAvatarType = document.getElementById('select-avatar-type');
+
+        // Avatar
+        const avatarWrapper = document.getElementById('avatar-wrapper');
+        const avatarDisplay = document.getElementById('avatar-display');
+        const userImg = document.getElementById('user-avatar-img');
+        const legsImg = document.getElementById('avatar-legs-img');
+        const viewport = document.getElementById('avatar-viewport');
+
+        // Botones de Estado
+        const btnIdle = document.getElementById('btn-state-idle');
+        const btnSpeaking = document.getElementById('btn-state-speaking');
+        const btnWalking = document.getElementById('btn-state-walking');
+        const btnFullscreen = document.getElementById('btn-state-fullscreen');
+        const btnCinematic = document.getElementById('btn-cinematic-mode');
+
+        // Estado del creador
+        let state = {
+            speaking: false,
+            walking: false,
+            avatarType: 'lolirot',
+            theme: 'lolirot',
+            font: 'bebas',
+            cinematic: false,
+            fullscreen: false
+        };
+
+        // Calibración por defecto para efectos
+        const calibration = {
+            wings_scale: 1.25,
+            wings_y: 50,
+            wings_x: -12,
+            abilityCalibration: {
+                ability1: { scale: 1.0, x: 40, y: 220, rot: 0 },
+                ability2: { scale: 1.0, x: -30, y: 100, rot: 0 },
+                ability3: { scale: 1.0, x: 0, y: -20, rot: 0 },
+                ability4: { scale: 1.0, x: 0, y: 0, rot: 0 },
+                ability5: { scale: 1.0, x: 0, y: 0, rot: 0 },
+                ability6: { scale: 1.0, x: 0, y: 0, rot: 0 },
+                ability7: { scale: 1.0, x: 0, y: 0, rot: 0 },
+                ability8: { scale: 1.0, x: 0, y: 0, rot: 0 },
+                ability9: { scale: 1.0, x: 0, y: 0, rot: 0 }
+            }
+        };
+
+        // ── ACTUALIZAR TEXTOS EN TIEMPO REAL ───────────────────────────
+        function updateTexts() {
+            dispHeader.innerText = inputHeader.value;
+            dispSubHeader.innerText = inputSubHeader.value;
+            dispFooter.innerText = inputFooter.value;
+            dispSubFooter.innerText = inputSubFooter.value;
+        }
+
+        [inputHeader, inputSubHeader, inputFooter, inputSubFooter].forEach(inp => {
+            inp.addEventListener('input', updateTexts);
+        });
+        updateTexts();
+
+        // ── ACTUALIZAR TEMAS Y ESTILOS ──────────────────────────────────
+        const themes = {
+            lolirot: {
+                primary: '#50fa7b',
+                secondary: '#8be9fd',
+                glow: 'rgba(80, 250, 123, 0.45)',
+                gradient: 'linear-gradient(135deg, #0f1c12 0%, #080d0a 100%)'
+            },
+            bloodelf: {
+                primary: '#ff2a2a',
+                secondary: '#ffd700',
+                glow: 'rgba(255, 42, 42, 0.45)',
+                gradient: 'linear-gradient(135deg, #300808 0%, #0c0202 100%)'
+            },
+            void: {
+                primary: '#b15cff',
+                secondary: '#8a2be2',
+                glow: 'rgba(177, 92, 255, 0.45)',
+                gradient: 'linear-gradient(135deg, #1b0a2d 0%, #050209 100%)'
+            },
+            phoenix: {
+                primary: '#ff6600',
+                secondary: '#ffcc00',
+                glow: 'rgba(255, 102, 0, 0.45)',
+                gradient: 'linear-gradient(135deg, #361400 0%, #0d0500 100%)'
+            }
+        };
+
+        function applyTheme(themeName) {
+            const t = themes[themeName] || themes.lolirot;
+            document.documentElement.style.setProperty('--theme-primary', t.primary);
+            document.documentElement.style.setProperty('--theme-secondary', t.secondary);
+            document.documentElement.style.setProperty('--theme-glow', t.glow);
+            document.documentElement.style.setProperty('--theme-gradient', t.gradient);
+            state.theme = themeName;
+        }
+
+        selectTheme.addEventListener('change', (e) => {
+            applyTheme(e.target.value);
+        });
+
+        // ── ACTUALIZAR FUENTES ──────────────────────────────────────────
+        const fonts = {
+            bebas: "'Bebas Neue', sans-serif",
+            bungee: "'Bungee', sans-serif",
+            cinzel: "'Cinzel', serif",
+            montserrat: "'Montserrat', sans-serif"
+        };
+
+        selectFont.addEventListener('change', (e) => {
+            const fontName = e.target.value;
+            const cssFont = fonts[fontName] || fonts.bebas;
+            document.documentElement.style.setProperty('--font-title', cssFont);
+            state.font = fontName;
+        });
+
+        // ── CAMBIAR PERSONAJE ────────────────────────────────────────────
+        selectAvatarType.addEventListener('change', (e) => {
+            state.avatarType = e.target.value;
+            updateAvatarDisplay();
+        });
+
+        // ── MANEJO DEL CICLO DEL PERSONAJE ──────────────────────────────
+        let blinkTimer = null;
+        let mouthTimer = null;
+        let walkTimer = null;
+        let walkFrame = 1;
+        let isBlinking = false;
+        let mouthState = 'idle'; // 'idle', 'med', 'wide'
+
+        function updateAvatarDisplay() {
+            const path = `assets/${state.avatarType}`;
+            
+            // Si está caminando, sólo mostrar piernas de caminado y recortar cuerpo
+            if (state.walking && (state.avatarType === 'lolirot' || state.avatarType === 'lolirot_red')) {
+                legsImg.style.display = 'block';
+                legsImg.src = `${path}/wow_chibi_legs_walk_${walkFrame}.png`;
+                avatarWrapper.classList.add('active-elf-split');
+                avatarWrapper.classList.remove('avatar-lolirot', 'avatar-lolirot_red');
+                avatarWrapper.classList.add('avatar-' + state.avatarType);
+            } else {
+                legsImg.style.display = 'none';
+                avatarWrapper.classList.remove('active-elf-split', 'avatar-lolirot', 'avatar-lolirot_red');
+            }
+
+            // Cuerpo/Expresión principal
+            if (state.speaking) {
+                if (isBlinking) {
+                    userImg.src = `${path}/wow_chibi_speaking_blink.png`;
+                } else {
+                    if (mouthState === 'wide') {
+                        userImg.src = `${path}/wow_chibi_speaking_wide.png`;
+                    } else {
+                        userImg.src = `${path}/wow_chibi_speaking_med.png`;
+                    }
+                }
+            } else {
+                // Silencio
+                if (isBlinking) {
+                    userImg.src = `${path}/wow_chibi_idle_blink.png`;
+                } else {
+                    userImg.src = `${path}/wow_chibi_idle.png`;
+                }
+            }
+
+            // Actualizar máscara y visibilidad del brillo de la calva en el reel
+            const shineEl = document.querySelector('.bald-shine-effect');
+            if (shineEl) {
+                shineEl.style.setProperty('--avatar-mask-url', `url("${userImg.src}")`);
+                if (false) {
+                    shineEl.style.display = 'block';
+                } else {
+                    shineEl.style.display = 'none';
+                }
+            }
+
+            // Mostrar/ocultar el control del brillo de la calva en el panel
+            const containerShine = document.getElementById('reel-bald-shine-container');
+            if (containerShine) {
+                containerShine.style.display = (false) ? 'block' : 'none';
+            }
+        }
+
+        // Bucle de Parpadeo
+        function startBlinkLoop() {
+            const tick = () => {
+                isBlinking = true;
+                updateAvatarDisplay();
+                setTimeout(() => {
+                    isBlinking = false;
+                    updateAvatarDisplay();
+                    // Tiempo aleatorio entre parpadeos (2 a 5 segundos)
+                    blinkTimer = setTimeout(tick, 2000 + Math.random() * 3000);
+                }, 150);
+            };
+            blinkTimer = setTimeout(tick, 2000);
+        }
+
+        // Bucle de Voz (Mover boca cuando habla)
+        function startMouthLoop() {
+            const tick = () => {
+                if (state.speaking) {
+                    const rand = Math.random();
+                    if (rand < 0.3) {
+                        mouthState = 'idle';
+                    } else if (rand < 0.75) {
+                        mouthState = 'med';
+                    } else {
+                        mouthState = 'wide';
+                    }
+                    updateAvatarDisplay();
+                }
+                mouthTimer = setTimeout(tick, 100 + Math.random() * 120);
+            };
+            tick();
+        }
+
+        // Bucle de Caminado
+        function startWalkLoop() {
+            const tick = () => {
+                if (state.walking) {
+                    walkFrame = walkFrame === 1 ? 2 : 1;
+                    updateAvatarDisplay();
+                }
+                walkTimer = setTimeout(tick, 220); // Tiempo del paso
+            };
+            tick();
+        }
+
+        // ── MANEJAR LOS BOTONES DE ESTADO DEL PANEL ──────────────────────
+        function setSpeakingState(val) {
+            state.speaking = val;
+            if (val) {
+                btnSpeaking.classList.add('active');
+                btnIdle.classList.remove('active');
+            } else {
+                btnSpeaking.classList.remove('active');
+                btnIdle.classList.add('active');
+                mouthState = 'idle';
+            }
+            updateAvatarDisplay();
+        }
+
+        // Helper para alternar entre control por voz y manual
+        function setVoiceReactivity(enabled) {
+            voiceReactivityEnabled = enabled;
+            const btn = document.getElementById('btn-toggle-reactivity');
+            if (btn) {
+                if (enabled) {
+                    btn.classList.add('active');
+                    btn.innerText = '🎙️ Control: Por Voz';
+                } else {
+                    btn.classList.remove('active');
+                    btn.innerText = '👤 Control: Manual';
+                }
+            }
+        }
+
+        btnIdle.addEventListener('click', () => {
+            setVoiceReactivity(false);
+            setSpeakingState(false);
+        });
+        btnSpeaking.addEventListener('click', () => {
+            setVoiceReactivity(false);
+            setSpeakingState(true);
+        });
+
+        const btnToggleReactivity = document.getElementById('btn-toggle-reactivity');
+        if (btnToggleReactivity) {
+            btnToggleReactivity.addEventListener('click', () => {
+                setVoiceReactivity(!voiceReactivityEnabled);
+            });
+        }
+
+        btnWalking.addEventListener('click', () => {
+            state.walking = !state.walking;
+            if (state.walking) {
+                btnWalking.classList.add('active');
+                avatarWrapper.classList.add('walking-active');
+            } else {
+                btnWalking.classList.remove('active');
+                avatarWrapper.classList.remove('walking-active');
+            }
+            updateAvatarDisplay();
+        });
+
+        // Pantalla Completa
+        btnFullscreen.addEventListener('click', toggleFullscreen);
+
+        function toggleFullscreen() {
+            state.fullscreen = !state.fullscreen;
+            if (state.fullscreen) {
+                reelContainer.classList.add('fullscreen');
+                btnFullscreen.classList.add('active');
+            } else {
+                reelContainer.classList.remove('fullscreen');
+                btnFullscreen.classList.remove('active');
+            }
+        }
+
+        // Ocultar / Mostrar panel
+        function togglePanel(force) {
+            const shouldHide = force !== undefined ? force : !settingsPanel.classList.contains('hidden');
+            if (shouldHide) {
+                settingsPanel.classList.add('hidden');
+            } else {
+                settingsPanel.classList.remove('hidden');
+            }
+        }
+        togglePanelBtn.addEventListener('click', () => togglePanel());
+
+        // Escucha de teclado para ocultar panel
+        window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'h' && document.activeElement.tagName !== 'INPUT') {
+                togglePanel();
+            }
+        });
+
+        // ── SISTEMA DE PARTÍCULAS AMBIENTALES ──────────────────────────
+        const background = document.getElementById('reel-background');
+        
+        function spawnAmbientParticle() {
+            if (document.hidden) return;
+            const p = document.createElement('div');
+            p.className = 'ambient-particle';
+            
+            const size = 3 + Math.random() * 8;
+            p.style.width = p.style.height = `${size}px`;
+            p.style.left = `${Math.random() * 100}%`;
+            p.style.bottom = `-20px`;
+            p.style.setProperty('--duration', `${4 + Math.random() * 5}s`);
+            p.style.setProperty('--max-opacity', 0.2 + Math.random() * 0.5);
+            
+            // Colores basados en el tema
+            let color = '#50fa7b'; // Lolirot
+            if (state.theme === 'bloodelf') {
+                color = Math.random() > 0.4 ? '#ff3b30' : '#ffcc00';
+            } else if (state.theme === 'void') {
+                color = Math.random() > 0.4 ? '#a254ff' : '#00ffd5';
+            } else if (state.theme === 'phoenix') {
+                color = Math.random() > 0.3 ? '#ff6c00' : '#ffdd00';
+            } else if (state.theme === 'lolirot') {
+                color = Math.random() > 0.5 ? '#50fa7b' : '#8be9fd';
+            }
+            p.style.background = color;
+            p.style.boxShadow = `0 0 ${size}px ${color}`;
+
+            background.appendChild(p);
+            
+            // Eliminar al terminar animación
+            setTimeout(() => p.remove(), 9000);
+        }
+
+        // Generar partículas ambientales periódicamente
+        setInterval(spawnAmbientParticle, 350);
+
+        // ── HABILIDADES DEL PALADÍN (IDÉNTICO AL ADDON) ─────────────────
+        function getEC() {
+            let ec = avatarWrapper.querySelector('.paladin-effect-container');
+            if (!ec) {
+                ec = document.createElement('div');
+                ec.className = 'paladin-effect-container';
+                avatarWrapper.appendChild(ec);
+            }
+            return ec;
+        }
+
+        function spawnParticle(container, x, y, dx, dy, sz, color) {
+            const p = document.createElement('div');
+            p.className = 'holy-particle';
+            p.style.left = `${x}px`;
+            p.style.top = `${y}px`;
+            p.style.setProperty('--dx', `${dx}px`);
+            p.style.setProperty('--dy', `${dy}px`);
+            p.style.width = p.style.height = `${sz}px`;
+            if (color) {
+                p.style.background = color;
+                p.style.filter = `drop-shadow(0 0 5px ${color})`;
+            }
+            container.appendChild(p);
+            setTimeout(() => p.remove(), 800);
+        }
+
+        function spawnSparks(container, count, x, y, goUp = false, color = null) {
+            for (let i = 0; i < count; i++) {
+                let dx, dy;
+                if (goUp) {
+                    dx = (Math.random() - 0.5) * 60;
+                    dy = -50 - Math.random() * 100;
+                } else {
+                    const a = Math.random() * Math.PI * 2;
+                    const d = 30 + Math.random() * 100;
+                    dx = Math.cos(a) * d;
+                    dy = Math.sin(a) * d;
+                }
+                const sz = 4 + Math.random() * 8;
+                let finalColor = color;
+                if (!finalColor) {
+                    finalColor = '#50fa7b';
+                    if (state.theme === 'void') finalColor = '#a254ff';
+                    else if (state.theme === 'bloodelf') finalColor = Math.random() > 0.4 ? '#ff2a2a' : '#ffd700';
+                    else if (state.theme === 'lolirot') finalColor = Math.random() > 0.5 ? '#50fa7b' : '#8be9fd';
+                }
+                spawnParticle(container, x, y, dx, dy, sz, finalColor);
+            }
+        }
+
+        function spawnDivineRain(container, color = null) {
+            const p = document.createElement('div'); p.className = 'holy-particle';
+            p.style.left = `${Math.random() * 400}px`;
+            p.style.top  = `${Math.random() * 100}px`;
+            const dx = (Math.random()-.5)*30;
+            const dy = 80 + Math.random()*120;
+            p.style.setProperty('--dx', `${dx}px`); p.style.setProperty('--dy', `${dy}px`);
+            const sz = 3+Math.random()*7; p.style.width = p.style.height = `${sz}px`;
+            p.style.background = color || (Math.random() > .5 ? '#fff' : '#50fa7b');
+            p.style.animationDuration = '.9s';
+            container.appendChild(p); setTimeout(() => p.remove(), 1000);
+        }
+
+        function spawnConsecrationSparks(container, xOffset = 0, yOffset = 0, color = null) {
+            const s = document.createElement('div'); s.className = 'holy-particle';
+            s.style.left = `${200 + xOffset + (Math.random()-.5)*320}px`; s.style.top = `${370 + yOffset + (Math.random()-.5)*40}px`;
+            s.style.setProperty('--dx', `${(Math.random()-.5)*20}px`); s.style.setProperty('--dy', `${-60-Math.random()*80}px`);
+            const sz = 3+Math.random()*6; s.style.width = s.style.height = `${sz}px`;
+            if (color) {
+                s.style.background = color;
+                s.style.filter = `drop-shadow(0 0 5px ${color})`;
+            }
+            container.appendChild(s); setTimeout(() => s.remove(), 1000);
+        }
+
+        function triggerAbility(action) {
+            if (action === 'bald_shine') {
+                const shineEl = document.querySelector('.bald-shine-effect');
+                if (shineEl) {
+                    shineEl.classList.remove('shining');
+                    void shineEl.offsetWidth; // Force reflow
+                    shineEl.classList.add('shining');
+                }
+                return;
+            }
+
+            const ec = getEC();
+            const calData = calibration.abilityCalibration[action];
+            if (calData) {
+                ec.style.setProperty(`--${action}-scale`, calData.scale);
+                ec.style.setProperty(`--${action}-x`, `${calData.x}px`);
+                ec.style.setProperty(`--${action}-y`, `${calData.y}px`);
+                ec.style.setProperty(`--${action}-rot`, `${calData.rot !== undefined ? calData.rot : 0}deg`);
+            }
+
+            if (action === 'ability1') {
+                // Golpe de Raptor / Espada de Veneno Verde
+                const spear = document.createElement('div');
+                spear.className = 'hunter-spear';
+                spear.innerHTML = `<svg viewBox="0 0 190 52" style="transform:scaleX(-1)" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="sBGreen" x1="0%" y1="50%" x2="100%" y2="50%"><stop offset="0%" stop-color="#fff" stop-opacity="0.05"/><stop offset="15%" stop-color="#a0ffe0"/><stop offset="45%" stop-color="#ffffff"/><stop offset="75%" stop-color="#50fa7b"/><stop offset="100%" stop-color="#fff" stop-opacity="0.15"/></linearGradient><linearGradient id="sHGreen" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#263b2e"/><stop offset="50%" stop-color="#141f18"/><stop offset="100%" stop-color="#263b2e"/></linearGradient><filter id="sGGreen"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><polygon points="2,26 18,19 136,22 136,30 18,33" fill="url(#sBGreen)" filter="url(#sGGreen)"/><polygon points="0,26 16,18 16,34" fill="#ffffff" filter="url(#sGGreen)"/><line x1="6" y1="24" x2="132" y2="22" stroke="#fff" stroke-width="1.8" opacity="0.75"/><rect x="134" y="14" width="9" height="24" rx="2.5" fill="#50fa7b" stroke="#263b2e" stroke-width="1"/><rect x="143" y="22" width="36" height="8" rx="3" fill="url(#sHGreen)"/><line x1="152" y1="22" x2="152" y2="30" stroke="#141f18" stroke-width="1" opacity="0.5"/><line x1="159" y1="22" x2="159" y2="30" stroke="#141f18" stroke-width="1" opacity="0.5"/><line x1="166" y1="22" x2="166" y2="30" stroke="#141f18" stroke-width="1" opacity="0.5"/><circle cx="183" cy="26" r="7" fill="#50fa7b" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/></svg>`;
+                const arc = document.createElement('div');
+                arc.className = 'hunter-slash-arc';
+                ec.appendChild(spear);
+                ec.appendChild(arc);
+                viewport.classList.add('shake-active');
+                setTimeout(() => viewport.classList.remove('shake-active'), 300);
+
+                const scale = calData ? calData.scale : 1.0;
+                const xOffset = calData ? calData.x : 0;
+                const yOffset = calData ? calData.y : 0;
+                const rot = calData ? (calData.rot !== undefined ? calData.rot : 0) : 0;
+
+                const containerHeight = ec.offsetHeight || 400;
+                const x0 = 50 + xOffset;
+                const y0 = containerHeight * 0.2 + 26 + yOffset;
+                const L = 190 * scale;
+
+                const angleDeg = 15 + rot;
+                const angleRad = angleDeg * Math.PI / 180;
+
+                const tipX = x0 + L * Math.cos(angleRad);
+                const tipY = y0 + L * Math.sin(angleRad);
+
+                setTimeout(() => spawnSparks(ec, 14, tipX, tipY, false, '#50fa7b'), 300);
+                setTimeout(() => { spear.remove(); arc.remove(); }, 500);
+
+            } else if (action === 'ability2') {
+            // Bomba de Fuego Salvaje - animación JS para dirección real
+            const bomb = document.createElement('div');
+            bomb.className = 'hunter-bomb';
+            bomb.innerHTML = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="bmGrad" cx="40%" cy="40%" r="50%"><stop offset="0%" stop-color="#ffb86c"/><stop offset="100%" stop-color="#ff5555"/></radialGradient></defs><circle cx="50" cy="55" r="30" fill="url(#bmGrad)" stroke="#282a36" stroke-width="3"/><path d="M50,25 L50,15 Q55,10 65,15" fill="none" stroke="#f1fa8c" stroke-width="4"/><circle cx="65" cy="15" r="4" fill="#ff5555"/></svg>`;
+            bomb.style.animation = 'none';
+            bomb.style.opacity = '0';
+            ec.appendChild(bomb);
+
+            const xVal  = calData ? calData.x   : -30;
+            const yVal  = calData ? calData.y   : 100;
+            const rot   = calData ? (calData.rot !== undefined ? calData.rot : 45) : 45;
+            const scale = calData ? (calData.scale || 1.0) : 1.0;
+            const rotRad = rot * Math.PI / 180;
+            const D = 260;
+            const endOffX = D * Math.cos(rotRad);
+            const endOffY = D * Math.sin(rotRad);
+            const halfBomb = 42.5 * scale;
+            const coneCenterX = xVal + halfBomb + endOffX;
+            const coneCenterY = yVal + halfBomb + endOffY;
+            const coneSize = 400 * scale;
+            const bombDur = 500;
+            const bombStart = performance.now();
+
+            function animateBomb(now) {
+                const t = Math.min((now - bombStart) / bombDur, 1);
+                const dx = endOffX * t;
+                const dy = endOffY * t;
+                const spin = rot + 360 * t;
+                const sc = 0.4 + 0.6 * t;
+                const op = t < 0.25 ? t / 0.25 : 1;
+                bomb.style.transform = `translate(${dx}px, ${dy}px) rotate(${spin}deg) scale(${sc})`;
+                bomb.style.opacity = op;
+                if (t < 1) requestAnimationFrame(animateBomb);
+            }
+            requestAnimationFrame(animateBomb);
+
+            setTimeout(() => {
+                viewport.classList.add('shake-active');
+                setTimeout(() => viewport.classList.remove('shake-active'), 300);
+                const cone = document.createElement('div');
+                cone.className = 'hunter-fire-cone';
+                cone.style.left   = (coneCenterX - coneSize / 2) + 'px';
+                cone.style.top    = (coneCenterY - coneSize / 2) + 'px';
+                cone.style.width  = coneSize + 'px';
+                cone.style.height = coneSize + 'px';
+                ec.appendChild(cone);
+                let iv = setInterval(() => {
+                    if (!cone.parentNode) { clearInterval(iv); return; }
+                    spawnSparks(ec, 4, coneCenterX, coneCenterY, false, Math.random() > 0.5 ? '#ffb86c' : '#50fa7b');
+                }, 80);
+                setTimeout(() => { clearInterval(iv); cone.remove(); }, 1000);
+                bomb.remove();
+            }, 500);
+
+        } else if (action === 'ability3') {
+                // Trampa de Alquitrán
+                const puddle = document.createElement('div');
+                puddle.className = 'hunter-tar-puddle';
+                ec.appendChild(puddle);
+
+                const xVal = calData ? calData.x : 0;
+                const yVal = calData ? calData.y : 0;
+
+                let iv = setInterval(() => {
+                    if (!puddle.parentNode) { clearInterval(iv); return; }
+                    spawnConsecrationSparks(ec, xVal, yVal, '#21222c');
+                }, 100);
+
+                setTimeout(() => {
+                    clearInterval(iv);
+                    puddle.remove();
+                }, 4500);
+
+            } else if (action === 'ability4') {
+            // Takedown: Flash explosivo + chispas
+            avatarWrapper.querySelectorAll('.butterfly-wrath-overlay').forEach(el => el.remove());
+            const flash = document.createElement('div');
+            flash.className = 'avenging-flash';
+            avatarWrapper.appendChild(flash);
+            setTimeout(() => flash.remove(), 600);
+
+            viewport.classList.add('shake-active');
+            setTimeout(() => viewport.classList.remove('shake-active'), 300);
+
+            const xVal4 = calData ? calData.x : 0;
+            const yVal4 = calData ? calData.y : 0;
+
+            // Explosión inicial grande de chispas
+            spawnSparks(ec, 20, 200 + xVal4, 200 + yVal4, false, '#ff79c6');
+            setTimeout(() => spawnSparks(ec, 15, 200 + xVal4, 200 + yVal4, true, '#bd93f9'), 80);
+            setTimeout(() => spawnSparks(ec, 15, 200 + xVal4, 200 + yVal4, false, '#8be9fd'), 160);
+
+            // Lluvia de chispas cayendo
+            let rainIv4 = setInterval(() => {
+                spawnSparks(ec, 3, 200 + xVal4 + (Math.random() - 0.5) * 80, 200 + yVal4, false,
+                    Math.random() > 0.5 ? '#ff79c6' : '#bd93f9');
+            }, 80);
+            setTimeout(() => clearInterval(rainIv4), 2500);
+
+            } else if (action === 'ability5') {
+                // Aliviar Mascota: Huella flotante
+                const mend = document.createElement('div');
+                mend.className = 'hunter-mend-pet';
+                mend.innerHTML = `<svg viewBox="0 0 100 100" width="100%" height="100%"><defs><linearGradient id="mpGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#50fa7b"/><stop offset="100%" stop-color="#8be9fd"/></linearGradient></defs><circle cx="50" cy="55" r="20" fill="url(#mpGrad)"/><circle cx="25" cy="25" r="10" fill="url(#mpGrad)"/><circle cx="42" cy="15" r="11" fill="url(#mpGrad)"/><circle cx="62" cy="15" r="11" fill="url(#mpGrad)"/><circle cx="78" cy="27" r="10" fill="url(#mpGrad)"/></svg>`;
+                ec.appendChild(mend);
+                
+                const xVal = calData ? calData.x : 0;
+                const yVal = calData ? calData.y : 0;
+
+                let iv = setInterval(() => {
+                    if (!mend.parentNode) { clearInterval(iv); return; }
+                    spawnSparks(ec, 2, 200 + xVal, 200 + yVal, true, '#50fa7b');
+                }, 120);
+
+                setTimeout(() => { clearInterval(iv); mend.remove(); }, 2000);
+
+            } else if (action === 'ability6') {
+                // Aspecto de la Tortuga: Escudo Caparazón Verde
+                const shell = document.createElement('div');
+                shell.className = 'hunter-turtle-shell';
+                shell.innerHTML = `<svg viewBox="0 0 100 100" width="100%" height="100%"><defs><linearGradient id="shGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#50fa7b" stop-opacity="0.55"/><stop offset="100%" stop-color="#8be9fd" stop-opacity="0.25"/></linearGradient><filter id="shGlow"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><circle cx="50" cy="50" r="46" fill="url(#shGrad)" stroke="#50fa7b" stroke-width="1.2" filter="url(#shGlow)"/><circle cx="50" cy="50" r="40" fill="none" stroke="#8be9fd" stroke-width="0.5" opacity="0.4"/><!-- Hex center --><polygon points="50,28 62,35 62,49 50,56 38,49 38,35" stroke="#50fa7b" stroke-width="1.2" fill="rgba(80,250,123,0.08)"/><!-- Surrounding hex segments --><polygon points="50,56 62,63 62,77 50,84 38,77 38,63" stroke="#50fa7b" stroke-width="1" fill="none" opacity="0.7"/><polygon points="50,5  62,12 62,26 50,33 38,26 38,12" stroke="#8be9fd" stroke-width="1" fill="none" opacity="0.6"/><polygon points="74,35 86,42 86,56 74,63 62,56 62,42" stroke="#50fa7b" stroke-width="1" fill="none" opacity="0.6"/><polygon points="26,35 38,42 38,56 26,63 14,56 14,42" stroke="#50fa7b" stroke-width="1" fill="none" opacity="0.6"/></svg>`;
+                ec.appendChild(shell);
+
+                const xVal = calData ? calData.x : 0;
+                const yVal = calData ? calData.y : 0;
+
+                let iv = setInterval(() => {
+                    if (!shell.parentNode) { clearInterval(iv); return; }
+                    spawnSparks(ec, 2, 200 + xVal, 200 + yVal, false, '#8be9fd');
+                }, 150);
+
+                setTimeout(() => { clearInterval(iv); shell.remove(); }, 8000);
+
+            } else if (action === 'ability7') {
+            // Arpón - Jabalina de Cazadora
+            const harpoon = document.createElement('div');
+            harpoon.className = 'hunter-harpoon';
+            harpoon.innerHTML = `<svg viewBox="0 0 240 80" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="hpShaft" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#1a3a1a" stop-opacity="0.4"/><stop offset="20%" stop-color="#50fa7b"/><stop offset="55%" stop-color="#c8ffe0"/><stop offset="80%" stop-color="#8be9fd"/><stop offset="100%" stop-color="#50fa7b" stop-opacity="0.2"/></linearGradient><linearGradient id="hpTip" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#8be9fd"/><stop offset="100%" stop-color="#ffffff"/></linearGradient><filter id="hpGlow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><!-- Shaft --><rect x="18" y="37" width="185" height="6" rx="3" fill="url(#hpShaft)" filter="url(#hpGlow)"/><!-- Tip (tri-blade) --><polygon points="203,20 238,40 203,60" fill="url(#hpTip)" stroke="#ffffff" stroke-width="1"/><polygon points="203,29 228,40 203,51" fill="#ffffff" opacity="0.5"/><!-- Rear fin --><polygon points="18,37 4,26 12,40 4,54 18,43" fill="#50fa7b" opacity="0.9" filter="url(#hpGlow)"/><!-- Barb 1 --><polygon points="75,37 88,24 88,37" fill="#50fa7b" opacity="0.8"/><polygon points="75,43 88,56 88,43" fill="#50fa7b" opacity="0.6"/><!-- Barb 2 --><polygon points="120,37 133,24 133,37" fill="#8be9fd" opacity="0.8"/><polygon points="120,43 133,56 133,43" fill="#8be9fd" opacity="0.6"/><!-- Energy rings --><ellipse cx="45" cy="40" rx="9" ry="6" fill="none" stroke="#50fa7b" stroke-width="1.2" opacity="0.7"/><ellipse cx="45" cy="40" rx="14" ry="9" fill="none" stroke="#50fa7b" stroke-width="0.6" opacity="0.35"/></svg>`;
+            ec.appendChild(harpoon);
+            viewport.classList.add('shake-active');
+            setTimeout(() => viewport.classList.remove('shake-active'), 300);
+
+            const xVal = calData ? calData.x : 0;
+            const yVal = calData ? calData.y : 0;
+            const rot7 = calData ? (calData.rot !== undefined ? calData.rot : 0) : 0;
+            const rotRad7 = rot7 * Math.PI / 180;
+
+            // Chispas en el punto de impacto (derecha del harpón)
+            setTimeout(() => {
+                const tipX = 200 + xVal + 240 * Math.cos(rotRad7);
+                const tipY = 200 + yVal + 240 * Math.sin(rotRad7);
+                spawnSparks(ec, 14, tipX, tipY, false, '#8be9fd');
+                spawnSparks(ec, 8,  tipX, tipY, false, '#50fa7b');
+            }, 400);
+
+            let iv = setInterval(() => {
+                if (!harpoon.parentNode) { clearInterval(iv); return; }
+                spawnSparks(ec, 1, 200 + xVal, 200 + yVal, false, '#8be9fd');
+            }, 120);
+
+            setTimeout(() => { clearInterval(iv); harpoon.remove(); }, 1000);
+
+            } else if (action === 'ability9') {
+            // Boomstick - Escopeta de doble cañón (animación JS pura)
+            const xVal9  = calData ? calData.x : 0;
+            const yVal9  = calData ? calData.y : 0;
+            const rot9   = calData ? (calData.rot !== undefined ? calData.rot : 0) : 0;
+            const scale9 = calData ? (calData.scale || 1.0) : 1.0;
+
+            const gunW = 240 * scale9;
+            const gunH = 50 * scale9;
+            const gunLeft = 200 - gunW / 2 + xVal9;
+            const gunTop  = 200 - gunH / 2 + yVal9;
+
+            const gun = document.createElement('div');
+            gun.className = 'hunter-boomstick';
+            gun.style.width  = gunW + 'px';
+            gun.style.height = gunH + 'px';
+            gun.style.left   = gunLeft + 'px';
+            gun.style.top    = gunTop  + 'px';
+            gun.style.opacity = '0';
+            gun.style.transformOrigin = '18% 50%';
+            gun.innerHTML = `<svg viewBox="0 0 240 50" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bsG" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#2a2c3e"/><stop offset="40%" stop-color="#5a5c7a"/><stop offset="100%" stop-color="#2a2c3e"/></linearGradient><linearGradient id="bsBL" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7a8fb0"/><stop offset="45%" stop-color="#b8d0f0"/><stop offset="100%" stop-color="#5a6a8a"/></linearGradient><radialGradient id="bsF" cx="90%" cy="50%" r="55%"><stop offset="0%" stop-color="#ffffff"/><stop offset="30%" stop-color="#f1fa8c"/><stop offset="65%" stop-color="#ffb86c" stop-opacity="0.6"/><stop offset="100%" stop-color="#ff5555" stop-opacity="0"/></radialGradient><filter id="bsGl"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><!-- Stock --><rect x="3" y="19" width="34" height="14" rx="3.5" fill="url(#bsG)"/><rect x="5" y="21" width="28" height="10" rx="2" fill="#1a1c28" opacity="0.7"/><!-- Pump grip --><rect x="24" y="27" width="16" height="12" rx="3" fill="#1e2030"/><rect x="26" y="29" width="12" height="2" rx="1" fill="#44475a"/><rect x="26" y="33" width="12" height="2" rx="1" fill="#44475a"/><!-- Upper barrel --><rect x="40" y="17" width="176" height="8" rx="4" fill="url(#bsBL)" filter="url(#bsGl)"/><!-- Lower barrel --><rect x="40" y="25" width="176" height="8" rx="4" fill="url(#bsBL)" opacity="0.8" filter="url(#bsGl)"/><!-- Barrel top shine --><line x1="44" y1="20" x2="212" y2="20" stroke="rgba(200,220,255,0.6)" stroke-width="1.8" stroke-linecap="round"/><!-- Muzzle cap --><rect x="214" y="16" width="6" height="18" rx="2.5" fill="#8be9fd" opacity="0.95" filter="url(#bsGl)"/><!-- Ejected shell casing --><rect x="38" y="10" width="7" height="11" rx="2.5" fill="#f1fa8c" opacity="0.85" filter="url(#bsGl)" transform="rotate(-25 41 16)"/></svg>`;
+            ec.appendChild(gun);
+
+            // Rotate barrel end around pivot (transformOrigin: 18% 50%) to correctly align muzzle flash and pellets when rotated
+            const rad9 = rot9 * Math.PI / 180;
+            const pivotX = gunLeft + gunW * 0.18;
+            const pivotY = gunTop + gunH * 0.50;
+            const relEndX = (gunW - 28 * scale9) - (gunW * 0.18);
+            const barrelEndX = pivotX + relEndX * Math.cos(rad9);
+            const barrelMidY = pivotY + relEndX * Math.sin(rad9);
+
+            // Muzzle flash spawns separately when gun fires (not as static SVG)
+            setTimeout(() => {
+                const mflash = document.createElement('div');
+                mflash.className = 'hunter-boomstick-flash';
+                mflash.style.left = barrelEndX + 'px';
+                mflash.style.top  = barrelMidY + 'px';
+                ec.appendChild(mflash);
+                setTimeout(() => mflash.remove(), 300);
+            }, 45);
+
+            viewport.classList.add('shake-active');
+            setTimeout(() => viewport.classList.remove('shake-active'), 300);
+
+            // JS-based recoil animation (no CSS vars in keyframes)
+            const gunStart = performance.now();
+            const gunDur   = 620;
+            function animateGun(now) {
+                const t = Math.min((now - gunStart) / gunDur, 1);
+
+                // Recoil curve: quick kick back → settle
+                let kickX = 0, kickRot = 0;
+                if (t < 0.18) {
+                    const p = t / 0.18;
+                    kickX   = -26 * p;
+                    kickRot = -5 * p;
+                } else if (t < 0.42) {
+                    const p = (t - 0.18) / 0.24;
+                    kickX   = -26 + 18 * p;
+                    kickRot = -5 + 5 * p;
+                } else {
+                    kickX   = -8;
+                    kickRot = 0;
+                }
+                const op = t < 0.06 ? t / 0.06 : t > 0.78 ? 1 - (t - 0.78) / 0.22 : 1;
+                gun.style.transform = `rotate(${rot9 + kickRot}deg) translate(${kickX}px, ${kickRot * 0.35}px)`;
+                gun.style.opacity   = op;
+                if (t < 1) requestAnimationFrame(animateGun);
+                else gun.remove();
+            }
+            requestAnimationFrame(animateGun);
+
+            const spreadAngles = [-30, -18, -6, 6, 18, 30];
+
+            // Spawn pellet trails
+            spreadAngles.forEach((ang, i) => {
+                setTimeout(() => {
+                    const pellet = document.createElement('div');
+                    pellet.className = 'hunter-boomstick-pellet';
+                    const totalAngle = rot9 + ang;
+                    pellet.style.left = barrelEndX + 'px';
+                    pellet.style.top  = barrelMidY + 'px';
+                    pellet.style.transform = `rotate(${totalAngle}deg)`;
+                    ec.appendChild(pellet);
+                    setTimeout(() => pellet.remove(), 400);
+                }, 45 + i * 20);
+            });
+
+            // Impact sparks where pellets land
+            setTimeout(() => {
+                spreadAngles.forEach(ang => {
+                    const rad  = (rot9 + ang) * Math.PI / 180;
+                    const dist = 85 + Math.random() * 55;
+                    spawnSparks(ec, 3,
+                        barrelEndX + dist * Math.cos(rad),
+                        barrelMidY + dist * Math.sin(rad),
+                        false, Math.random() > 0.5 ? '#f1fa8c' : '#ffb86c');
+                });
+            }, 215);
+
+        } else if (action === 'ability8') {
+                // Comando de Matar: Zarpazo Espectral Naranja/Verde
+                const slash = document.createElement('div');
+                slash.className = 'hunter-pet-slash';
+                slash.innerHTML = `<svg viewBox="0 0 200 200" width="100%" height="100%"><path d="M20,180 Q60,100 180,20 M50,190 Q90,110 190,40 M10,160 Q40,90 160,10" stroke="#ffb86c" stroke-width="8" stroke-linecap="round" fill="none" filter="drop-shadow(0 0 10px #ff5555)"/><path d="M180,180 Q100,100 20,20" stroke="#50fa7b" stroke-width="12" stroke-linecap="round" fill="none" opacity="0.4" filter="drop-shadow(0 0 15px #50fa7b)"/></svg>`;
+                ec.appendChild(slash);
+                viewport.classList.add('shake-active');
+                setTimeout(() => viewport.classList.remove('shake-active'), 300);
+
+                const xVal = calData ? calData.x : 0;
+                const yVal = calData ? calData.y : 0;
+
+                let iv = setInterval(() => {
+                    if (!slash.parentNode) { clearInterval(iv); return; }
+                    spawnSparks(ec, 3, 200 + xVal, 200 + yVal, false, Math.random() > 0.5 ? '#ffb86c' : '#ff5555');
+                }, 80);
+
+                setTimeout(() => { clearInterval(iv); slash.remove(); }, 800);
+            }
+        }
+
+        // ── BUCLE CINEMÁTICO AUTO (Para grabación cómoda de Reels) ───────
+        let cinematicInterval = null;
+        let cineStep = 0;
+
+        function runCinematicStep() {
+            if (!state.cinematic) return;
+            
+            // Secuencias del reel
+            const sequence = [
+                () => { // Paso 0: Empieza a hablar (Presentación)
+                    setSpeakingState(true);
+                    state.walking = false;
+                    avatarWrapper.classList.remove('walking-active');
+                    updateAvatarDisplay();
+                },
+                () => { // Paso 1: Se calla y camina con decisión
+                    setSpeakingState(false);
+                    state.walking = true;
+                    avatarWrapper.classList.add('walking-active');
+                    updateAvatarDisplay();
+                },
+                () => { // Paso 2: Activa Asalto Coordinado (Alas de Mariposa + Aura)
+                    state.walking = false;
+                    avatarWrapper.classList.remove('walking-active');
+                    updateAvatarDisplay();
+                    triggerAbility('ability4');
+                },
+                () => { // Paso 3: Ataca con Golpe de Raptor
+                    triggerAbility('ability1');
+                },
+                () => { // Paso 4: Habla de nuevo emocionada
+                    setSpeakingState(true);
+                },
+                () => { // Paso 5: Lanza Bomba de Fuego Salvaje
+                    triggerAbility('ability2');
+                },
+                () => { // Paso 6: Se protege con Aspecto de la Tortuga
+                    triggerAbility('ability6');
+                },
+                () => { // Paso 7: Lanza Comando de Matar
+                    triggerAbility('ability8');
+                },
+                () => { // Paso 8: Se calla, fin del ciclo
+                    setSpeakingState(false);
+                }
+            ];
+
+            const action = sequence[cineStep];
+            if (action) action();
+
+            cineStep = (cineStep + 1) % sequence.length;
+        }
+
+        btnCinematic.addEventListener('click', () => {
+            state.cinematic = !state.cinematic;
+            if (state.cinematic) {
+                btnCinematic.className = "btn-primary";
+                btnCinematic.innerText = "🎥 Bucle Cinemático Auto: ON";
+                cineStep = 0;
+                runCinematicStep();
+                cinematicInterval = setInterval(runCinematicStep, 2200); // Cambio de paso cada 2.2 seg
+            } else {
+                btnCinematic.className = "btn-secondary";
+                btnCinematic.innerText = "🎥 Bucle Cinemático Auto: OFF";
+                if (cinematicInterval) clearInterval(cinematicInterval);
+                // Restablecer estados
+                setSpeakingState(false);
+                state.walking = false;
+                avatarWrapper.classList.remove('walking-active');
+                updateAvatarDisplay();
+            }
+        });
+
+        // ── SINCRONIZACIÓN DE CALIBRACIÓN EN TIEMPO REAL ──────────────────
+        const syncIndicator = document.getElementById('sync-status-indicator');
+
+        async function syncCalibration() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/display_state');
+                if (!response.ok) throw new Error("Error response");
+                const s = await response.json();
+                
+                // 1. Sincronizar calibración base
+                if (s.calibration) {
+                    Object.assign(calibration, s.calibration);
+                    
+                    // Piernas
+                    const calLegs = s.calibration;
+                    if (calLegs.legs_scale !== undefined) {
+                        legsImg.style.setProperty('--legs-scale', calLegs.legs_scale);
+                    }
+                    if (calLegs.legs_x !== undefined) {
+                        legsImg.style.setProperty('--legs-x', `${calLegs.legs_x}px`);
+                    }
+                    if (calLegs.legs_y !== undefined) {
+                        legsImg.style.setProperty('--legs-y', `${calLegs.legs_y}px`);
+                    }
+                    
+                    // Configurar variables de alas para cuando se activen
+                    if (calLegs.wings_scale !== undefined) {
+                        calibration.wings_scale = calLegs.wings_scale;
+                    }
+                    if (calLegs.wings_x !== undefined) {
+                        calibration.wings_x = calLegs.wings_x;
+                    }
+                    if (calLegs.wings_y !== undefined) {
+                        calibration.wings_y = calLegs.wings_y;
+                    }
+                    if (calLegs.wings_pos_x !== undefined) {
+                        calibration.wings_pos_x = calLegs.wings_pos_x;
+                    }
+                }
+
+                // 2. Sincronizar Avatar escala y posiciones
+                if (s.avatarScale !== undefined) {
+                    avatarWrapper.style.setProperty('--avatar-scale', s.avatarScale);
+                }
+                if (s.avatarX !== undefined) {
+                    avatarWrapper.style.setProperty('--avatar-x', `${s.avatarX}px`);
+                }
+                if (s.avatarY !== undefined) {
+                    avatarWrapper.style.setProperty('--avatar-y', `${s.avatarY}px`);
+                }
+
+                // 3. Sincronizar variables de física de rebote
+                if (s.bounceHeight !== undefined) {
+                    const ratio = s.bounceHeight / 20.0;
+                    document.documentElement.style.setProperty('--bounce-height', `${s.bounceHeight}px`);
+                    document.documentElement.style.setProperty('--bounce-scale-x-40', 1.0 + 0.03 * ratio);
+                    document.documentElement.style.setProperty('--bounce-scale-y-40', 1.0 - 0.03 * ratio);
+                    document.documentElement.style.setProperty('--bounce-scale-x-100', 1.0 - 0.03 * ratio);
+                    document.documentElement.style.setProperty('--bounce-scale-y-100', 1.0 + 0.05 * ratio);
+                }
+                if (s.bounceSpeed !== undefined) {
+                    document.documentElement.style.setProperty('--bounce-speed', `${s.bounceSpeed}ms`);
+                }
+
+                // Actualizar indicador
+                syncIndicator.style.background = 'rgba(80, 250, 123, 0.15)';
+                syncIndicator.style.color = '#50fa7b';
+                syncIndicator.innerText = '🟢 Sincronizado';
+
+            } catch (err) {
+                syncIndicator.style.background = 'rgba(255, 85, 85, 0.15)';
+                syncIndicator.style.color = '#ff5555';
+                syncIndicator.innerText = '🔴 Sin Conexión';
+            }
+        }
+
+        // ── INICIALIZACIÓN ──────────────────────────────────────────────
+        startBlinkLoop();
+        startMouthLoop();
+        startWalkLoop();
+        const shineEl = document.querySelector('.bald-shine-effect');
+        if (shineEl) {
+            shineEl.addEventListener('animationend', () => {
+                shineEl.classList.remove('shining');
+            });
+        }
+
+        updateAvatarDisplay();
+
+        // Ejecutar primer sync y arrancar bucle de sincronización cada 1.5s
+        syncCalibration();
+        setInterval(syncCalibration, 1500);
+
+        // ── GRABADOR DE VIDEO INTEGRADO (RECORTE A 9:16) ──────────────────
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
+        let cropAnimationId = null;
+        let auxVideoEl = null;
+        let autoStopTimeout = null;
+        let autoStopInterval = null;
+
+        const btnRecord = document.getElementById('btn-record-reel');
+        if (btnRecord) {
+            btnRecord.addEventListener('click', async () => {
+                // Función auxiliar para temporizador de finalización automática de grabación
+                function startAutoStopTimer(durationSeconds) {
+                    if (autoStopTimeout) clearTimeout(autoStopTimeout);
+                    if (autoStopInterval) clearInterval(autoStopInterval);
+                    
+                    let timeLeft = durationSeconds;
+                    btnRecord.innerHTML = `⏹️ Detener Grabación (${timeLeft}s)`;
+                    
+                    autoStopInterval = setInterval(() => {
+                        timeLeft--;
+                        if (timeLeft > 0) {
+                            btnRecord.innerHTML = `⏹️ Detener Grabación (${timeLeft}s)`;
+                        } else {
+                            clearInterval(autoStopInterval);
+                        }
+                    }, 1000);
+                    
+                    autoStopTimeout = setTimeout(() => {
+                        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                            mediaRecorder.stop();
+                        }
+                    }, durationSeconds * 1000);
+                }
+
+                if (!isRecording) {
+                    let countdownInterval = null;
+                    try {
+                        // 1. Obtener el stream de la pestaña
+                        const stream = await navigator.mediaDevices.getDisplayMedia({
+                            video: {
+                                displaySurface: "browser",
+                                cursor: "never"
+                            },
+                            audio: true,
+                            selfBrowserSurface: "include",
+                            preferCurrentTab: true
+                        });
+
+                        const displaySurface = stream.getVideoTracks()[0].getSettings().displaySurface;
+                        if (displaySurface !== 'browser') {
+                            alert("💡 Para obtener el recorte 9:16 perfecto (sin bordes negros ni barras del navegador), se recomienda detener la grabación y seleccionar la pestaña actual del navegador ('Pestaña de Chrome' o 'Pestaña de Edge') al iniciar.");
+                        }
+
+                        recordedChunks = [];
+
+                        // 2. Crear video auxiliar para reproducir el stream y poder pintarlo en canvas
+                        auxVideoEl = document.createElement('video');
+                        auxVideoEl.srcObject = stream;
+                        auxVideoEl.muted = true;
+                        auxVideoEl.playsInline = true;
+                        await auxVideoEl.play();
+
+                        // 3. Crear canvas auxiliar para el recorte (Fijamos resolución vertical nítida de 1080x1920)
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const reelContainer = document.getElementById('reel-container');
+
+                        canvas.width = 1080;
+                        canvas.height = 1920;
+
+                        // 4. Bucle para pintar el fragmento recortado
+                        let active = true;
+                        function drawFrame() {
+                            if (!active) return;
+                            
+                            const rect = reelContainer.getBoundingClientRect();
+                            const videoWidth = auxVideoEl.videoWidth;
+                            const videoHeight = auxVideoEl.videoHeight;
+                            const viewportWidth = window.innerWidth;
+                            const viewportHeight = window.innerHeight;
+
+                            const scaleX = videoWidth / viewportWidth;
+                            const scaleY = videoHeight / viewportHeight;
+
+                            const sx = rect.left * scaleX;
+                            const sy = rect.top * scaleY;
+                            const sw = rect.width * scaleX;
+                            const sh = rect.height * scaleY;
+
+                            // Limpiar y dibujar con alisado de imagen para calidad premium
+                            ctx.imageSmoothingEnabled = true;
+                            ctx.imageSmoothingQuality = 'high';
+                            ctx.drawImage(auxVideoEl, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+                            cropAnimationId = requestAnimationFrame(drawFrame);
+                        }
+                        drawFrame();
+
+                        // 5. Capturar stream del canvas recortado
+                        const croppedStream = canvas.captureStream(60); // 60 FPS para máxima fluidez
+
+                        // Añadir audio mezclado (micrófono + música) o el original del navegador si no están activos
+                        if (mixDest && (micActive || musicSourceNode)) {
+                            mixDest.stream.getAudioTracks().forEach(track => croppedStream.addTrack(track));
+                        } else {
+                            stream.getAudioTracks().forEach(track => croppedStream.addTrack(track));
+                        }
+
+                        // Si detienen el stream desde la barra de compartir del navegador
+                        stream.getVideoTracks()[0].onended = () => {
+                            if (countdownInterval) clearInterval(countdownInterval);
+                            if (autoStopTimeout) { clearTimeout(autoStopTimeout); autoStopTimeout = null; }
+                            if (autoStopInterval) { clearInterval(autoStopInterval); autoStopInterval = null; }
+                            const overlay = document.getElementById('countdown-overlay');
+                            if (overlay) overlay.style.display = 'none';
+
+                            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                                mediaRecorder.stop();
+                            } else {
+                                btnRecord.disabled = false;
+                                btnRecord.innerHTML = '🔴 Grabar Clip (WebM)';
+                                btnRecord.style.background = 'linear-gradient(135deg, #ff5555 0%, #ff79c6 100%)';
+                                btnRecord.style.color = '#fff';
+                                isRecording = false;
+                                active = false;
+                                if (cropAnimationId) cancelAnimationFrame(cropAnimationId);
+                                if (auxVideoEl) {
+                                    auxVideoEl.srcObject = null;
+                                    auxVideoEl.remove();
+                                }
+                            }
+                        };
+
+                        // 6. Configurar MediaRecorder para el stream recortado
+                        let options = { mimeType: 'video/webm; codecs=vp9' };
+                        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                            options = { mimeType: 'video/webm; codecs=vp8' };
+                        }
+                        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                            options = { mimeType: 'video/webm' };
+                        }
+
+                        mediaRecorder = new MediaRecorder(croppedStream, options);
+
+                        mediaRecorder.ondataavailable = (e) => {
+                            if (e.data.size > 0) {
+                                recordedChunks.push(e.data);
+                            }
+                        };
+
+                        mediaRecorder.onstop = async () => {
+                            active = false;
+                            if (autoStopTimeout) { clearTimeout(autoStopTimeout); autoStopTimeout = null; }
+                            if (autoStopInterval) { clearInterval(autoStopInterval); autoStopInterval = null; }
+                            if (cropAnimationId) cancelAnimationFrame(cropAnimationId);
+                            document.body.classList.remove('recording-active');
+                            
+                            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                            
+                            btnRecord.disabled = true;
+                            btnRecord.innerHTML = '⏳ Guardando Video...';
+                            btnRecord.style.background = 'linear-gradient(135deg, #ffb86c 0%, #ff5555 100%)';
+                            btnRecord.style.color = '#000';
+
+                            const filename = `giftuber_reel_${Date.now()}.webm`;
+
+                            try {
+                                const response = await fetch('/save_video', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'video/webm',
+                                        'X-Filename': filename
+                                    },
+                                    body: blob
+                                });
+                                
+                                if (response.ok) {
+                                    alert(`🎉 ¡Video guardado con éxito!\nSe guardó en la carpeta 'grabaciones' y se abrió el Explorador de Windows.`);
+                                } else {
+                                    alert("❌ Error al guardar el video en el servidor.");
+                                }
+                            } catch (err) {
+                                console.error("Error al enviar video al servidor:", err);
+                                alert("❌ Error al intentar guardar el video.");
+                            }
+
+                            // Detener todas las pistas
+                            stream.getTracks().forEach(track => track.stop());
+                            if (auxVideoEl) {
+                                auxVideoEl.srcObject = null;
+                                auxVideoEl.remove();
+                            }
+                            
+                            isRecording = false;
+                            btnRecord.disabled = false;
+                            btnRecord.innerHTML = '🔴 Grabar Clip (WebM)';
+                            btnRecord.style.background = 'linear-gradient(135deg, #ff5555 0%, #ff79c6 100%)';
+                            btnRecord.style.color = '#fff';
+                        };
+
+                        // 7. Cuenta Regresiva de 5 Segundos
+                        const countdownOverlay = document.getElementById('countdown-overlay');
+                        const countdownNum = document.getElementById('countdown-number');
+                        
+                        if (countdownOverlay && countdownNum) {
+                            countdownOverlay.style.display = 'flex';
+                            let count = 5;
+                            countdownNum.textContent = count;
+                            btnRecord.disabled = true;
+                            btnRecord.innerHTML = `⏳ Iniciando en ${count}s...`;
+                            btnRecord.style.background = 'linear-gradient(135deg, #ffb86c 0%, #ff5555 100%)';
+                            btnRecord.style.color = '#000';
+
+                            countdownInterval = setInterval(() => {
+                                count--;
+                                if (count > 0) {
+                                    countdownNum.textContent = count;
+                                    btnRecord.innerHTML = `⏳ Iniciando en ${count}s...`;
+                                    
+                                    // Forzar reinicio de animación CSS de pulso
+                                    countdownNum.classList.remove('countdown-zoom');
+                                    void countdownNum.offsetWidth; // Reflow
+                                    countdownNum.classList.add('countdown-zoom');
+                                } else {
+                                    clearInterval(countdownInterval);
+                                    countdownOverlay.style.display = 'none';
+                                    btnRecord.disabled = false;
+                                    
+                                    // Empezar a grabar realmente!
+                                    mediaRecorder.start();
+                                    document.body.classList.add('recording-active');
+                                    isRecording = true;
+                                    btnRecord.innerHTML = '⏹️ Detener Grabación';
+                                    btnRecord.style.background = 'linear-gradient(135deg, #f1fa8c 0%, #ff5555 100%)';
+                                    btnRecord.style.color = '#000';
+
+                                    // Control de duración automática
+                                    const selectedDuration = parseInt(document.getElementById('select-record-duration').value) || 0;
+                                    if (selectedDuration > 0) {
+                                        startAutoStopTimer(selectedDuration);
+                                    }
+                                }
+                            }, 1000);
+                        } else {
+                            // Si por algún motivo no están los elementos, grabar directamente
+                            mediaRecorder.start();
+                            document.body.classList.add('recording-active');
+                            isRecording = true;
+                            btnRecord.innerHTML = '⏹️ Detener Grabación';
+                            btnRecord.style.background = 'linear-gradient(135deg, #f1fa8c 0%, #ff5555 100%)';
+                            btnRecord.style.color = '#000';
+
+                            // Control de duración automática
+                            const selectedDuration = parseInt(document.getElementById('select-record-duration').value) || 0;
+                            if (selectedDuration > 0) {
+                                startAutoStopTimer(selectedDuration);
+                            }
+                        }
+
+                    } catch (err) {
+                        console.error("Error al iniciar grabación:", err);
+                        alert("No se pudo iniciar la grabación de pestaña/pantalla.");
+                        isRecording = false;
+                        document.body.classList.remove('recording-active');
+                        if (countdownInterval) clearInterval(countdownInterval);
+                        if (autoStopTimeout) { clearTimeout(autoStopTimeout); autoStopTimeout = null; }
+                        if (autoStopInterval) { clearInterval(autoStopInterval); autoStopInterval = null; }
+                        if (cropAnimationId) cancelAnimationFrame(cropAnimationId);
+                    }
+                } else {
+                    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                        mediaRecorder.stop();
+                    }
+                }
+            });
+        }
+
+        // ── SISTEMA DE AUDIO Y MEZCLADOR ──────────────────────────────────
+        let audioContext = null;
+        let micStream = null;
+        let analyser = null;
+        let mixDest = null;
+        let micGainNode = null;
+        let musicGainNode = null;
+        let musicSourceNode = null;
+        let micSourceNode = null;
+
+        let micActive = false;
+        let voiceReactivityEnabled = true;
+        let micThreshold = 15;
+        let micGainValue = 1.0;
+        let musicGainValue = 0.3;
+
+        const btnMicAuth = document.getElementById('btn-mic-auth');
+        const micControls = document.getElementById('mic-controls');
+        const sliderMicGain = document.getElementById('slider-mic-gain');
+        const micGainVal = document.getElementById('mic-gain-val');
+        const sliderMicThreshold = document.getElementById('slider-mic-threshold');
+        const micThresholdVal = document.getElementById('mic-threshold-val');
+
+        const selectMicReel = document.getElementById('select-mic-reel');
+        const selectMicContainer = document.getElementById('select-mic-container');
+        let selectedMicId = localStorage.getItem('selectedMicId') || '';
+
+        const fileBgMusic = document.getElementById('file-bg-music');
+        const musicPlaybackControls = document.getElementById('music-playback-controls');
+        const sliderMusicGain = document.getElementById('slider-music-gain');
+        const musicGainVal = document.getElementById('music-gain-val');
+
+        // Inicializar AudioContext
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                mixDest = audioContext.createMediaStreamDestination();
+
+                // Oscilador casi silencioso para mantener vivo el AudioContext
+                // y evitar que Chrome/CEF lo suspenda o limite los temporizadores
+                try {
+                    const keepAliveOsc = audioContext.createOscillator();
+                    const keepAliveGain = audioContext.createGain();
+                    keepAliveGain.gain.setValueAtTime(0.00001, audioContext.currentTime);
+                    keepAliveOsc.connect(keepAliveGain);
+                    keepAliveGain.connect(audioContext.destination);
+                    keepAliveOsc.start();
+                } catch (e) {
+                    console.warn("No se pudo iniciar el oscilador keepalive:", e);
+                }
+            }
+        }
+
+        // Cargar lista de micrófonos
+        async function loadMicDevices() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const audioInputs = devices.filter(device => device.kind === 'audioinput');
+            
+            if (selectMicReel) {
+                selectMicReel.innerHTML = '';
+                audioInputs.forEach(device => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.textContent = device.label || `Micrófono (${device.deviceId.substring(0, 5)}...)`;
+                    selectMicReel.appendChild(option);
+                });
+
+                if (selectedMicId && audioInputs.some(d => d.deviceId === selectedMicId)) {
+                    selectMicReel.value = selectedMicId;
+                } else if (audioInputs.length > 0) {
+                    selectedMicId = audioInputs[0].deviceId;
+                    selectMicReel.value = selectedMicId;
+                }
+            }
+        }
+
+        // Obtener / Cambiar transmisión de micrófono
+        async function startMicStream(deviceId) {
+            if (micStream) {
+                micStream.getTracks().forEach(track => track.stop());
+            }
+
+            const constraints = {
+                audio: {
+                    deviceId: deviceId ? { exact: deviceId } : undefined,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                },
+                video: false
+            };
+
+            micStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+            if (audioContext && micActive) {
+                if (micSourceNode) {
+                    try { micSourceNode.disconnect(); } catch(_) {}
+                }
+                micSourceNode = audioContext.createMediaStreamSource(micStream);
+                if (analyser) micSourceNode.connect(analyser);
+                if (micGainNode) micSourceNode.connect(micGainNode);
+            }
+        }
+
+        // Activar Micrófono
+        if (btnMicAuth) {
+            btnMicAuth.addEventListener('click', async () => {
+                try {
+                    initAudioContext();
+                    
+                    if (audioContext.state === 'suspended') {
+                        await audioContext.resume();
+                    }
+
+                    if (!micActive) {
+                        // Solicitar permiso inicial de audio
+                        const initialStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                        initialStream.getTracks().forEach(track => track.stop()); // Apagar flujo inicial
+                        
+                        await loadMicDevices();
+                        await startMicStream(selectedMicId);
+                        
+                        // Configurar nodos
+                        micSourceNode = audioContext.createMediaStreamSource(micStream);
+                        analyser = audioContext.createAnalyser();
+                        analyser.fftSize = 256;
+                        analyser.smoothingTimeConstant = 0.2;
+                        
+                        micGainNode = audioContext.createGain();
+                        micGainNode.gain.value = micGainValue;
+
+                        // Conexión para análisis reactivo del avatar
+                        micSourceNode.connect(analyser);
+                        
+                        // Conexión para mezcla de grabación (SIN conectar al destination del audioContext para evitar eco)
+                        micSourceNode.connect(micGainNode);
+                        micGainNode.connect(mixDest);
+
+                        startReactVolumeLoop();
+
+                        btnMicAuth.innerHTML = '🟢 Micrófono Activo';
+                        btnMicAuth.style.background = 'rgba(80, 250, 123, 0.2)';
+                        btnMicAuth.style.color = '#50fa7b';
+                        micControls.style.display = 'block';
+                        if (selectMicContainer) selectMicContainer.style.display = 'block';
+                        micActive = true;
+                    } else {
+                        // Desactivar
+                        if (micStream) {
+                            micStream.getTracks().forEach(track => track.stop());
+                        }
+                        if (volumeIntervalId) {
+                            clearInterval(volumeIntervalId);
+                            volumeIntervalId = null;
+                        }
+                        // Resetear barra de volumen visual
+                        const fillEl = document.getElementById('volume-bar-fill');
+                        const valEl = document.getElementById('volume-val');
+                        if (fillEl) fillEl.style.width = '0%';
+                        if (valEl) valEl.textContent = '0%';
+
+                        btnMicAuth.innerHTML = '⚡ Activar Micrófono';
+                        btnMicAuth.style.background = '';
+                        btnMicAuth.style.color = '';
+                        micControls.style.display = 'none';
+                        if (selectMicContainer) selectMicContainer.style.display = 'none';
+                        micActive = false;
+                        setSpeakingState(false);
+                    }
+                } catch (err) {
+                    console.error("Error al acceder al micrófono:", err);
+                    alert("No se pudo acceder al micrófono.");
+                }
+            });
+        }
+
+        // Evento para cambiar dispositivo de entrada
+        if (selectMicReel) {
+            selectMicReel.addEventListener('change', async (e) => {
+                selectedMicId = e.target.value;
+                localStorage.setItem('selectedMicId', selectedMicId);
+                if (micActive) {
+                    try {
+                        await startMicStream(selectedMicId);
+                    } catch (err) {
+                        console.error("Error al cambiar de micrófono:", err);
+                        alert("No se pudo cambiar al micrófono seleccionado.");
+                    }
+                }
+            });
+        }
+
+        // Bucle de volumen para habla reactiva
+        let lastSpeakingTime = 0;
+        let volumeIntervalId = null;
+        function startReactVolumeLoop() {
+            if (volumeIntervalId) {
+                clearInterval(volumeIntervalId);
+            }
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            const checkVolume = () => {
+                if (!micActive || !analyser) return;
+
+                // Reanudar AudioContext si es necesario
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                
+                analyser.getByteFrequencyData(dataArray);
+                
+                let sum = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    sum += dataArray[i];
+                }
+                const average = sum / bufferLength;
+                const avgVolume = Math.min(100, Math.round((average / 150) * 100));
+
+                // Actualizar interfaz del volumen
+                const fillEl = document.getElementById('volume-bar-fill');
+                const valEl = document.getElementById('volume-val');
+                const markerEl = document.getElementById('volume-threshold-marker');
+                
+                if (fillEl) fillEl.style.width = `${avgVolume}%`;
+                if (valEl) valEl.textContent = `${avgVolume}%`;
+                if (markerEl) markerEl.style.left = `${micThreshold}%`;
+
+                const now = Date.now();
+                if (voiceReactivityEnabled) {
+                    if (avgVolume >= micThreshold) {
+                        lastSpeakingTime = now;
+                        if (!state.speaking) {
+                            setSpeakingState(true);
+                        }
+                    } else {
+                        if (state.speaking && (now - lastSpeakingTime > 200)) { // Retraso de 200ms
+                            setSpeakingState(false);
+                        }
+                    }
+                }
+            };
+
+            // Correr a 50ms (igual que app.js) para mantener constancia
+            volumeIntervalId = setInterval(checkVolume, 50);
+        }
+
+        // Controles de volumen del micrófono
+        if (sliderMicGain && micGainVal) {
+            sliderMicGain.addEventListener('input', (e) => {
+                micGainValue = parseFloat(e.target.value);
+                micGainVal.textContent = `${Math.round(micGainValue * 100)}%`;
+                if (micGainNode) {
+                    micGainNode.gain.value = micGainValue;
+                }
+            });
+        }
+
+        if (sliderMicThreshold && micThresholdVal) {
+            sliderMicThreshold.addEventListener('input', (e) => {
+                micThreshold = parseInt(e.target.value);
+                micThresholdVal.textContent = `${micThreshold}%`;
+                const markerEl = document.getElementById('volume-threshold-marker');
+                if (markerEl) {
+                    markerEl.style.left = `${micThreshold}%`;
+                }
+            });
+        }
+
+        // Cargar música de fondo
+        const bgMusicEl = new Audio();
+        bgMusicEl.loop = true;
+
+        // Función para formatear tiempo (mm:ss)
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        // Configurar Web Audio para la música si no está ya
+        function setupMusicWebAudio() {
+            initAudioContext();
+            if (!musicSourceNode) {
+                musicSourceNode = audioContext.createMediaElementSource(bgMusicEl);
+                musicGainNode = audioContext.createGain();
+                musicGainNode.gain.value = musicGainValue;
+
+                // Conectar la música a la salida de mezcla de la grabación
+                musicSourceNode.connect(musicGainNode);
+                musicGainNode.connect(mixDest);
+
+                // Conectar la música también a las bocinas del usuario para que la escuche
+                musicGainNode.connect(audioContext.destination);
+            }
+        }
+
+        if (fileBgMusic) {
+            fileBgMusic.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                setupMusicWebAudio();
+                
+                const url = URL.createObjectURL(file);
+                bgMusicEl.src = url;
+                bgMusicEl.play().catch(err => console.error("Error al reproducir música:", err));
+
+                musicPlaybackControls.style.display = 'block';
+            });
+        }
+
+        // Cargar desde enlace de YouTube
+        const btnLoadYt = document.getElementById('btn-load-yt');
+        const inputYtUrl = document.getElementById('input-yt-url');
+        const ytLoadStatus = document.getElementById('yt-load-status');
+        const sliderMusicTime = document.getElementById('slider-music-time');
+        const musicCurrentTimeEl = document.getElementById('music-current-time');
+        const musicTotalTimeEl = document.getElementById('music-total-time');
+
+        if (btnLoadYt) {
+            btnLoadYt.addEventListener('click', async () => {
+                const url = inputYtUrl.value.trim();
+                if (!url) {
+                    alert("Por favor, ingresa una URL de YouTube.");
+                    return;
+                }
+
+                btnLoadYt.disabled = true;
+                btnLoadYt.textContent = 'Cargando...';
+                ytLoadStatus.textContent = 'Descargando audio de YouTube en el servidor...';
+                ytLoadStatus.style.color = 'var(--text-muted)';
+
+                try {
+                    const response = await fetch('/download_youtube', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ url })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Error de servidor: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    if (data.ok) {
+                        ytLoadStatus.textContent = `🎵 Cargado: ${data.title}`;
+                        ytLoadStatus.style.color = '#50fa7b';
+                        
+                        setupMusicWebAudio();
+
+                        // Cache busting para evitar usar audio anterior si se descarga sobre el mismo archivo temporal
+                        bgMusicEl.src = data.audioUrl + '?t=' + Date.now();
+                        
+                        if (audioContext && audioContext.state === 'suspended') {
+                            await audioContext.resume();
+                        }
+                        await bgMusicEl.play();
+
+                        musicPlaybackControls.style.display = 'block';
+                    } else {
+                        throw new Error(data.error || 'Error al descargar el audio.');
+                    }
+                } catch (err) {
+                    console.error("Error al cargar YouTube audio:", err);
+                    ytLoadStatus.textContent = `❌ Error: ${err.message}`;
+                    ytLoadStatus.style.color = '#ff5555';
+                } finally {
+                    btnLoadYt.disabled = false;
+                    btnLoadYt.textContent = 'Cargar';
+                }
+            });
+        }
+
+        // Eventos para actualizar la barra de tiempo
+        bgMusicEl.addEventListener('durationchange', () => {
+            if (sliderMusicTime) {
+                sliderMusicTime.max = bgMusicEl.duration || 100;
+            }
+            if (musicTotalTimeEl) {
+                musicTotalTimeEl.textContent = formatTime(bgMusicEl.duration);
+            }
+        });
+
+        bgMusicEl.addEventListener('timeupdate', () => {
+            if (sliderMusicTime && !sliderMusicTime.dataset.dragging) {
+                sliderMusicTime.value = bgMusicEl.currentTime;
+            }
+            if (musicCurrentTimeEl) {
+                musicCurrentTimeEl.textContent = formatTime(bgMusicEl.currentTime);
+            }
+        });
+
+        if (sliderMusicTime) {
+            sliderMusicTime.addEventListener('mousedown', () => {
+                sliderMusicTime.dataset.dragging = 'true';
+            });
+            sliderMusicTime.addEventListener('mouseup', () => {
+                sliderMusicTime.dataset.dragging = '';
+                bgMusicEl.currentTime = parseFloat(sliderMusicTime.value);
+            });
+            sliderMusicTime.addEventListener('touchstart', () => {
+                sliderMusicTime.dataset.dragging = 'true';
+            });
+            sliderMusicTime.addEventListener('touchend', () => {
+                sliderMusicTime.dataset.dragging = '';
+                bgMusicEl.currentTime = parseFloat(sliderMusicTime.value);
+            });
+            sliderMusicTime.addEventListener('change', () => {
+                bgMusicEl.currentTime = parseFloat(sliderMusicTime.value);
+            });
+        }
+
+        // Controles de volumen de música
+        if (sliderMusicGain && musicGainVal) {
+            sliderMusicGain.addEventListener('input', (e) => {
+                musicGainValue = parseFloat(e.target.value);
+                musicGainVal.textContent = `${Math.round(musicGainValue * 100)}%`;
+                if (musicGainNode) {
+                    musicGainNode.gain.value = musicGainValue;
+                }
+            });
+        }
+        
+    </script>
+</body>
+</html>

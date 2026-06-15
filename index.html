@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giftuber - Tu Avatar Reactivo para Streamings</title>
+    <link rel="stylesheet" href="style.css?v=2.3">
+    <!-- Google Fonts para tipografía premium -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Panel de Control (Glassmorphism) -->
+        <aside id="control-panel">
+            <header>
+                <div class="logo" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="display: flex; align-items: center;">
+                        <span class="logo-icon">🎙️</span>
+                        <h1>Giftuber</h1>
+                    </div>
+                    <button id="btn-restart-services" class="btn-secondary" style="margin: 0; padding: 4px 8px; font-size: 11px; border-radius: 6px; display: flex; align-items: center; gap: 4px;" title="Reiniciar servidor y atajos">
+                        🔄 Reiniciar
+                    </button>
+                </div>
+                <p class="subtitle">Avatar reactivo para tu stream</p>
+            </header>
+
+            <div class="panel-scroll-area">
+                <!-- Acceso a Reel Studio -->
+                <div style="padding: 0 15px; margin-bottom: 20px; margin-top: 10px;">
+                    <a href="reel.html" class="btn-primary" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #ff79c6 0%, #bd93f9 100%); font-weight: bold; padding: 12px; border-radius: 8px; color: #fff; text-align: center; box-shadow: 0 4px 15px rgba(189, 147, 249, 0.3); transition: all 0.2s ease;">
+                        🎬 Ir al Reel Studio (Creador de Videos)
+                    </a>
+                </div>
+
+                <!-- Sección de Micrófono -->
+                <section class="panel-section">
+                    <h2><span class="sec-icon">🎤</span> Audio y Entrada</h2>
+                    
+                    <button id="btn-audio-auth" class="btn-primary">
+                        <span class="btn-icon">⚡</span> Activar Micrófono
+                    </button>
+
+                    <div class="control-group disabled-until-auth">
+                        <label for="select-mic">Dispositivo de Entrada</label>
+                        <select id="select-mic" disabled>
+                            <option value="">Selecciona un micrófono...</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group disabled-until-auth">
+                        <div class="label-with-value">
+                            <label>Volumen Actual</label>
+                            <span id="volume-val">0%</span>
+                        </div>
+                        <div class="volume-bar-container">
+                            <div id="volume-bar-fill"></div>
+                            <div id="volume-threshold-marker"></div>
+                        </div>
+                    </div>
+
+                    <div class="control-group disabled-until-auth">
+                        <div class="label-with-value">
+                            <label for="range-threshold">Umbral de Voz (Sensibilidad)</label>
+                            <span id="threshold-val">15%</span>
+                        </div>
+                        <input type="range" id="range-threshold" min="1" max="100" value="15" disabled>
+                        <p class="help-text">El volumen necesario para que tu avatar empiece a hablar.</p>
+                    </div>
+
+                    <div class="control-group disabled-until-auth">
+                        <div class="label-with-value">
+                            <label for="range-delay">Retraso al Callar (ms)</label>
+                            <span id="delay-val">200ms</span>
+                        </div>
+                        <input type="range" id="range-delay" min="50" max="1000" step="50" value="200" disabled>
+                        <p class="help-text">Tiempo que el avatar sigue hablando tras dejar de registrar sonido.</p>
+                    </div>
+                </section>
+
+                <!-- Sección de Imágenes del Avatar -->
+                <section class="panel-section">
+                    <h2><span class="sec-icon">🖼️</span> Personalizar Avatar</h2>
+                    
+                    <div class="control-group" style="margin-bottom: 15px;">
+                        <label for="select-avatar">Avatar Activo</label>
+                        <select id="select-avatar">
+                            <option value="lolirot" selected>Lolirot Chibi (Cazadora Supervivencia)</option>
+                            <option value="lolirot_red">Lolirot Chibi (Traje Rojo)</option>
+                            <option value="custom">Personalizado (Imágenes subidas)</option>
+                            <option value="default_svg">Gatito SVG (Por defecto)</option>
+                        </select>
+                    </div>
+
+                    <!-- Botones de Importación y Exportación -->
+                    <div class="pack-actions-group" style="display: flex; gap: 10px; margin-bottom: 25px;">
+                        <button id="btn-export-pack" class="btn-primary" style="flex: 1; padding: 10px; font-size: 13px; border-radius: 8px;">
+                            📥 Exportar Pack
+                        </button>
+                        <button id="btn-import-pack" class="btn-secondary" style="flex: 1; padding: 10px; font-size: 13px; margin-top: 0; border-radius: 8px;">
+                            📤 Importar Pack
+                        </button>
+                        <input type="file" id="file-import-pack" accept=".gtuber" style="display: none;">
+                    </div>
+
+                    <div id="custom-upload-area" style="display: none;">
+                        <div class="avatar-upload-grid">
+                            <div class="upload-box" id="box-idle">
+                                <span class="upload-label">En Silencio</span>
+                                <div class="preview-thumb" id="thumb-idle">
+                                    <span class="placeholder-thumb">🐱 (Cerrado)</span>
+                                </div>
+                                <input type="file" id="file-idle" accept="image/*" class="file-input">
+                                <button class="btn-upload-trigger">Subir</button>
+                            </div>
+
+                            <div class="upload-box" id="box-idle-blink">
+                                <span class="upload-label">Silencio (Parpadeo)</span>
+                                <div class="preview-thumb" id="thumb-idle-blink">
+                                    <span class="placeholder-thumb">😴 (Cerrado)</span>
+                                </div>
+                                <input type="file" id="file-idle-blink" accept="image/*" class="file-input">
+                                <button class="btn-upload-trigger">Subir</button>
+                            </div>
+
+                            <div class="upload-box" id="box-speaking-med">
+                                <span class="upload-label">Hablando Suave</span>
+                                <div class="preview-thumb" id="thumb-speaking-med">
+                                    <span class="placeholder-thumb">😸 (Boca Media)</span>
+                                </div>
+                                <input type="file" id="file-speaking-med" accept="image/*" class="file-input">
+                                <button class="btn-upload-trigger">Subir</button>
+                            </div>
+
+                            <div class="upload-box" id="box-speaking-wide">
+                                <span class="upload-label">Hablando Fuerte</span>
+                                <div class="preview-thumb" id="thumb-speaking-wide">
+                                    <span class="placeholder-thumb">📢 (Boca Ancha)</span>
+                                </div>
+                                <input type="file" id="file-speaking-wide" accept="image/*" class="file-input">
+                                <button class="btn-upload-trigger">Subir</button>
+                            </div>
+
+                            <div class="upload-box" id="box-speaking-blink">
+                                <span class="upload-label">Hablando (Parpadeo)</span>
+                                <div class="preview-thumb" id="thumb-speaking-blink">
+                                    <span class="placeholder-thumb">😉 (Abierto)</span>
+                                </div>
+                                <input type="file" id="file-speaking-blink" accept="image/*" class="file-input">
+                                <button class="btn-upload-trigger">Subir</button>
+                            </div>
+                        </div>
+                        
+                        <button id="btn-reset-avatar" class="btn-secondary" style="margin-top: 15px;">Limpiar Imágenes Cargadas</button>
+                    </div>
+                </section>
+
+                <!-- Sección de Controles de Lolirot (calibración de alas/mariposa) -->
+                <section class="panel-section" id="elf-controls-section" style="display: none;">
+                    <h2><span class="sec-icon">🏹</span> Controles de Lolirot</h2>
+                    
+                    <div class="control-group" style="display: none; margin-bottom: 20px; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <label for="select-paladin-spec" style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px; color: #ffd700;">🛡️ Especialización del Paladín</label>
+                        <select id="select-paladin-spec" style="width: 100%; font-size: 12px; padding: 6px 10px; border-radius: 6px; background: #1e1e2d; color: #fff; border: 1px solid var(--border-color); cursor: pointer;">
+                            <option value="ret" selected>Reprensión (Divine Toll: Martillos)</option>
+                            <option value="prot">Protección (Divine Toll: Escudos)</option>
+                            <option value="holy">Sagrado (Divine Toll: Choques de Luz)</option>
+                        </select>
+                        <p class="help-text" style="margin-top: 4px; font-size: 10px; color: var(--text-muted);">Ajusta la animación de la Campana Divina (Divine Toll) según tu especialización activa.</p>
+                    </div>
+
+                    <div id="bald-shine-control-group" class="control-group" style="margin-top: 15px; display: none;">
+                        <button id="btn-trigger-bald-shine" class="btn-primary" style="background: linear-gradient(135deg, #ffd700 0%, #bd93f9 100%); color: #000; font-weight: bold; width: 100%;">
+                            ✨ Brillar Calva
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Sección de Automatización de Colores -->
+                <section class="panel-section" id="color-automation-section" style="display: none;">
+                    <h2><span class="sec-icon">🎨</span> Automatización (Colores WoW)</h2>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+                        Asigna qué color del addon de WoW activa cada animación de tu Paladín.
+                    </p>
+                    
+                    <div id="color-mapping-container" style="display: flex; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.01); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <!-- Generado dinámicamente por JS -->
+                    </div>
+
+                    <!-- Calibración de Piernas -->
+                    <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                        <h3 style="font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                            <span>📏</span> Calibración de Piernas
+                        </h3>
+                        
+                        <div class="control-group" style="margin-top: 10px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
+                                <label for="slider-legs-scale">Escala (Tamaño)</label>
+                                <span id="legs-scale-val" style="font-weight: bold; color: var(--accent-color);">0.83</span>
+                            </div>
+                            <input type="range" id="slider-legs-scale" min="0.50" max="1.50" step="0.01" value="0.83" style="width: 100%; cursor: pointer;">
+                        </div>
+
+                        <div class="control-group" style="margin-top: 10px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
+                                <label for="slider-legs-y">Posición Vertical (Y)</label>
+                                <span id="legs-y-val" style="font-weight: bold; color: var(--accent-color);">22px</span>
+                            </div>
+                            <input type="range" id="slider-legs-y" min="-50" max="50" step="1" value="22" style="width: 100%; cursor: pointer;">
+                        </div>
+
+                        <div class="control-group" style="margin-top: 10px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
+                                <label for="slider-legs-x">Posición Horizontal (X)</label>
+                                <span id="legs-x-val" style="font-weight: bold; color: var(--accent-color);">0px</span>
+                            </div>
+                            <input type="range" id="slider-legs-x" min="-50" max="50" step="1" value="0" style="width: 100%; cursor: pointer;">
+                        </div>
+                    </div>
+
+
+                </section>
+
+                <!-- Sección de Animación y Apariencia -->
+                <section class="panel-section">
+                    <h2><span class="sec-icon">✨</span> Animación y Estilo</h2>
+
+                    <div class="control-group">
+                        <div class="label-with-value">
+                            <label for="range-bounce">Intensidad del Rebote</label>
+                            <span id="bounce-val">20px</span>
+                        </div>
+                        <input type="range" id="range-bounce" min="0" max="100" value="20">
+                    </div>
+
+                    <div class="control-group">
+                        <div class="label-with-value">
+                            <label for="range-bounce-speed">Velocidad de Rebote (ms)</label>
+                            <span id="bounce-speed-val">150ms</span>
+                        </div>
+                        <input type="range" id="range-bounce-speed" min="50" max="500" step="10" value="150">
+                    </div>
+
+                    <div class="control-group">
+                        <div class="label-with-value">
+                            <label for="range-scale">Tamaño del Avatar</label>
+                            <span id="scale-val">1.0x</span>
+                        </div>
+                        <input type="range" id="range-scale" min="0.5" max="2.0" step="0.1" value="1.0">
+                    </div>
+
+                    <div class="control-group">
+                        <div class="label-with-value">
+                            <label for="range-avatar-x">Desplazamiento X (Avatar)</label>
+                            <span id="avatar-x-val">0px</span>
+                        </div>
+                        <input type="range" id="range-avatar-x" min="-1000" max="1000" step="5" value="0">
+                    </div>
+
+                    <div class="control-group">
+                        <div class="label-with-value">
+                            <label for="range-avatar-y">Desplazamiento Y (Avatar)</label>
+                            <span id="avatar-y-val">0px</span>
+                        </div>
+                        <input type="range" id="range-avatar-y" min="-1000" max="1000" step="5" value="0">
+                    </div>
+
+                    <div class="control-group">
+                        <label>Fondo de Pantalla</label>
+                        <div class="bg-selector-grid">
+                            <button class="btn-bg bg-transparent active" data-bg="transparent" title="Transparente (OBS)">🏁</button>
+                            <button class="btn-bg bg-green" data-bg="#00ff00" title="Verde Croma">🟢</button>
+                            <button class="btn-bg bg-blue" data-bg="#0000ff" title="Azul Croma">🔵</button>
+                            <button class="btn-bg bg-dark" data-bg="#0d0b18" title="Fondo Oscuro">🌑</button>
+                            <div class="color-picker-wrapper">
+                                <input type="color" id="bg-color-picker" value="#00ff00" title="Personalizado">
+                                <span>🎨</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group checkbox-group">
+                        <input type="checkbox" id="chk-glow" checked>
+                        <label for="chk-glow">Brillo reactivo al hablar</label>
+                    </div>
+                </section>
+
+                <!-- Guía Rápida para OBS -->
+                <section class="panel-section obs-guide">
+                    <h2><span class="sec-icon">📹</span> Configurar en OBS</h2>
+                    <ol>
+                        <li>En OBS, añade una fuente de <strong>Navegador</strong> (Browser Source).</li>
+                        <li>Desmarca <strong>"Archivo local"</strong> e introduce esta dirección URL:
+                            <div class="copy-url-container" style="display: flex; align-items: center; gap: 8px; margin-top: 8px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; justify-content: space-between;">
+                                <code id="obs-url-text" style="font-family: monospace; color: var(--accent); font-size: 11px; word-break: break-all;">http://127.0.0.1:8000/obs.html</code>
+                                <button id="btn-copy-obs-url" class="btn-secondary" style="margin: 0; padding: 4px 10px; font-size: 11px; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; gap: 4px; width: auto; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12);" title="Copiar enlace al portapapeles">
+                                    📋 <span>Copiar</span>
+                                </button>
+                            </div>
+                        </li>
+                        <li>Establece el ancho/alto que desees (ej: 800x800).</li>
+                        <li>¡Listo! El avatar se mostrará con fondo transparente de forma automática.</li>
+                    </ol>
+                </section>
+            </div>
+            
+            <footer>
+                <p>Desarrollado con ❤️ para streamers</p>
+            </footer>
+        </aside>
+
+        <!-- Botón para ocultar/mostrar panel (flotante) -->
+        <button id="btn-toggle-panel" title="Ocultar/Mostrar Configuración (Teclado: H)">
+            <span class="icon-hide">◀</span>
+            <span class="icon-show" style="display: none;">⚙️</span>
+        </button>
+
+        <!-- Área de Renderizado del Avatar -->
+        <main id="avatar-viewport">
+            <div id="avatar-wrapper" class="idle">
+                <!-- Anillo de brillo reactivo -->
+                <div id="avatar-glow-ring"></div>
+                
+                <!-- Contenedor del avatar (SVG por defecto o imagen de usuario) -->
+                <div id="avatar-display">
+                    <!-- Default SVG Cat Avatar -->
+                    <svg id="default-svg-avatar" viewBox="0 0 400 400" width="100%" height="100%">
+                        <!-- Sombras/Detalles traseros -->
+                        <ellipse cx="200" cy="350" rx="120" ry="20" fill="rgba(0,0,0,0.15)" />
+                        
+                        <!-- Oreja Izquierda -->
+                        <polygon points="100,180 60,60 170,110" fill="#ff79c6" stroke="#282a36" stroke-width="8" stroke-linejoin="round" />
+                        <polygon points="105,170 75,75 155,115" fill="#ffb86c" />
+                        
+                        <!-- Oreja Derecha -->
+                        <polygon points="300,180 340,60 230,110" fill="#ff79c6" stroke="#282a36" stroke-width="8" stroke-linejoin="round" />
+                        <polygon points="295,170 325,75 245,115" fill="#ffb86c" />
+                        
+                        <!-- Cuerpo / Hombros -->
+                        <path d="M120,340 C120,290 280,290 280,340 Z" fill="#8be9fd" stroke="#282a36" stroke-width="8" />
+                        <path d="M175,300 L200,315 L225,300" fill="none" stroke="#282a36" stroke-width="6" stroke-linecap="round" />
+                        
+                        <!-- Cabeza -->
+                        <circle cx="200" cy="210" r="110" fill="#f8f8f2" stroke="#282a36" stroke-width="8" />
+                        
+                        <!-- Manchas de gato en la frente -->
+                        <path d="M185,103 C185,120 190,130 190,130 C190,130 195,120 195,103 Z" fill="#ffb86c" />
+                        <path d="M205,103 C205,120 210,130 210,130 C210,130 215,120 215,103 Z" fill="#ffb86c" />
+                        
+                        <!-- Mejillas Sonrosadas (Blush) -->
+                        <circle cx="120" cy="240" r="16" fill="#ff79c6" opacity="0.6" />
+                        <circle cx="280" cy="240" r="16" fill="#ff79c6" opacity="0.6" />
+                        
+                        <!-- Ojo Izquierdo Abierto -->
+                        <g id="eye-left-open">
+                            <circle cx="150" cy="205" r="18" fill="#282a36" />
+                            <circle cx="144" cy="197" r="6" fill="#ffffff" />
+                            <circle cx="156" cy="211" r="3" fill="#ffffff" />
+                        </g>
+                        <!-- Ojo Izquierdo Cerrado (Parpadeo) -->
+                        <g id="eye-left-closed" display="none">
+                            <path d="M132,205 Q150,220 168,205" fill="none" stroke="#282a36" stroke-width="8" stroke-linecap="round" />
+                        </g>
+
+                        <!-- Ojo Derecho Abierto -->
+                        <g id="eye-right-open">
+                            <circle cx="250" cy="205" r="18" fill="#282a36" />
+                            <circle cx="244" cy="197" r="6" fill="#ffffff" />
+                            <circle cx="256" cy="211" r="3" fill="#ffffff" />
+                        </g>
+                        <!-- Ojo Derecho Cerrado (Parpadeo) -->
+                        <g id="eye-right-closed" display="none">
+                            <path d="M232,205 Q250,220 268,205" fill="none" stroke="#282a36" stroke-width="8" stroke-linecap="round" />
+                        </g>
+
+                        <!-- Nariz -->
+                        <polygon points="195,225 205,225 200,231" fill="#ff79c6" stroke="#282a36" stroke-width="3" stroke-linejoin="round" />
+
+                        <!-- Boca Cerrada (Idle) -->
+                        <path id="mouth-closed" d="M185,240 Q193,248 200,240 Q207,248 215,240" fill="none" stroke="#282a36" stroke-width="6" stroke-linecap="round" />
+                        
+                        <!-- Boca Abierta (Speaking) -->
+                        <g id="mouth-open" display="none">
+                            <!-- Interior boca -->
+                            <path d="M182,240 Q200,275 218,240 Z" fill="#ff5555" stroke="#282a36" stroke-width="6" stroke-linejoin="round" />
+                            <!-- Lengua -->
+                            <path d="M190,256 Q200,245 210,256 C210,266 190,266 190,256 Z" fill="#ff79c6" />
+                        </g>
+                    </svg>
+                    <!-- Contenedor para la imagen cargada por el usuario -->
+                    <img id="user-avatar-img" src="" alt="Avatar de Usuario" style="display: none;">
+                    <div class="bald-shine-effect">
+                        <div class="bald-sheen-container">
+                            <div class="bald-sheen-line"></div>
+                        </div>
+                        <div class="bald-sparkle-container">
+                            <div class="bald-sparkle-halo"></div>
+                            <svg viewBox="0 0 100 100" class="bald-sparkle-star" style="width: 100%; height: 100%;">
+                                <path d="M 50,0 Q 50,50 100,50 Q 50,50 50,100 Q 50,50 0,50 Q 50,50 50,0 Z" fill="#fff" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Cargar Script principal -->
+    <script src="app.js?v=2.3"></script>
+    <script src="elf_actions.js?v=2.3"></script>
+</body>
+</html>

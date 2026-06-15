@@ -1,0 +1,8 @@
+## Interface: 120005
+## Title: Giftuber Helper
+## Notes: Addon auxiliar para el avatar de Giftuber. Muestra colores en la esquina superior izquierda al lanzar hechizos.
+## Author: Antigravity
+## Version: 1.0
+## SavedVariables: GiftuberHelperDB
+
+GiftuberHelper.lua

@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Giftuber OBS</title>
+    <link rel="stylesheet" href="style.css?v=2.3">
+    <style>
+        html, body {
+            margin: 0; padding: 0;
+            background: transparent !important;
+            overflow: hidden;
+            width: 100vw; height: 100vh;
+        }
+        #app-container { background: transparent !important; }
+        #avatar-viewport {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            background: transparent !important;
+        }
+        /* ===== Paladin Effects (mirror of elf_actions.js styles) ===== */
+        .elf-part { position: absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; pointer-events:none; }
+        .elf-part.legs-walk { transform-origin: bottom center; z-index: 3; }
+        .walking-active #avatar-display { animation: walkBob 0.55s infinite ease-in-out; transform-origin: bottom center; }
+        @keyframes walkBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+        #avatar-wrapper.active-elf-split #user-avatar-img {
+            clip-path: polygon(0% 0%, 100% 0%, 100% 91%, 63% 91%, 63% 86.5%, 37% 86.5%, 37% 91%, 0% 91%);
+            position: relative;
+            z-index: 2;
+        }
+        #avatar-wrapper.active-elf-split.avatar-lolirot_red #user-avatar-img {
+            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 59% 100%, 59% 78%, 41% 78%, 41% 100%, 0% 100%);
+        }
+
+        .paladin-effect-container { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:5; overflow:visible; }
+        
+        /* --- Survival Hunter Effects --- */
+        .hunter-spear {
+            position: absolute; width: 190px; height: 52px;
+            top: calc(20% + var(--ability1-y,0px)); left: calc(50px + var(--ability1-x,0px));
+            transform-origin: left center; opacity: 0;
+            filter: drop-shadow(0 0 8px rgba(80, 250, 123, 0.95)) drop-shadow(0 0 22px rgba(80, 250, 123, 0.6));
+            animation: spearSlash 0.45s cubic-bezier(0.1, 0.8, 0.3, 1.1) forwards;
+            z-index: 10;
+        }
+        @keyframes spearSlash {
+            0% { transform: rotate(calc(-60deg + var(--ability1-rot,0deg))) scale(var(--ability1-scale,1)); opacity: 0; }
+            15% { opacity: 1; }
+            70% { transform: rotate(calc(20deg + var(--ability1-rot,0deg))) scale(var(--ability1-scale,1)); opacity: 1; }
+            100% { transform: rotate(calc(30deg + var(--ability1-rot,0deg))) scale(var(--ability1-scale,1)); opacity: 0; }
+        }
+        .hunter-slash-arc {
+            position: absolute; width: 220px; height: 220px;
+            border: 5px solid transparent;
+            border-right-color: rgba(80, 250, 123, 0.85);
+            border-bottom-color: rgba(80, 250, 123, 0.3);
+            border-radius: 50%;
+            top: calc(20% - 100px + var(--ability1-y,0px));
+            left: calc(50px - 110px + var(--ability1-x,0px));
+            opacity: 0;
+            animation: slashArcGreen 0.4s ease-out forwards;
+            z-index: 9;
+        }
+        @keyframes slashArcGreen {
+            0% { transform: rotate(calc(-55deg + var(--ability1-rot,0deg))) scale(0.75); opacity: 0; }
+            25% { opacity: 0.9; }
+            100% { transform: rotate(calc(15deg + var(--ability1-rot,0deg))) scale(1.08); opacity: 0; }
+        }
+
+        .hunter-bomb {
+            position: absolute; width: calc(85px * var(--ability2-scale,1)); height: calc(85px * var(--ability2-scale,1));
+            top: var(--ability2-y, 25%); left: var(--ability2-x, -30px);
+            opacity: 0;
+            animation: bombThrow 0.5s ease-in forwards;
+            z-index: 10;
+        }
+        @keyframes bombThrow {
+            0% { transform: translate(0px, 0px) rotate(var(--ability2-rot, 0deg)) scale(0.4); opacity: 0; }
+            30% { opacity: 1; }
+            100% { transform: translate(200px, 200px) rotate(calc(360deg + var(--ability2-rot, 0deg))) scale(1); opacity: 1; }
+        }
+        .hunter-fire-cone {
+            position: absolute;
+            width: calc(400px * var(--ability2-scale, 1));
+            height: calc(400px * var(--ability2-scale, 1));
+            top: calc(200px + var(--ability2-y, 100px) - (200px * var(--ability2-scale, 1)));
+            left: calc(200px + var(--ability2-x, -30px) - (200px * var(--ability2-scale, 1)));
+            background: radial-gradient(circle, rgba(255, 85, 85, 0.4) 0%, rgba(80, 250, 123, 0.25) 50%, transparent 80%);
+            opacity: 0;
+            transform-origin: center center;
+            animation: fireExplosion 1.0s ease-out forwards;
+            pointer-events: none;
+            z-index: 4;
+            filter: blur(4px) drop-shadow(0 0 15px rgba(80, 250, 123, 0.5));
+        }
+        @keyframes fireExplosion {
+            0% { transform: scale(0) rotate(var(--ability2-rot, 0deg)); opacity: 0; }
+            15% { transform: scale(1.1) rotate(var(--ability2-rot, 0deg)); opacity: 0.95; }
+            80% { transform: scale(1.05) rotate(var(--ability2-rot, 0deg)); opacity: 0.85; }
+            100% { transform: scale(1.2) translateY(20px) rotate(var(--ability2-rot, 0deg)); opacity: 0; }
+        }
+
+         .hunter-tar-trap {
+            position: absolute; width: calc(140px * var(--ability3-scale,1)); height: calc(60px * var(--ability3-scale,1));
+            bottom: var(--ability3-y, -20px); left: calc(50% - (70px * var(--ability3-scale,1)) + var(--ability3-x, 0px));
+            opacity: 0;
+            animation: trapSnap 4.5s ease-out forwards;
+            z-index: 3;
+        }
+        @keyframes trapSnap {
+            0% { transform: translateY(-150px) scale(0.3) rotate(-90deg); opacity: 0; }
+            10% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+            12% { transform: scaleY(0.6); }
+            15% { transform: scaleY(1); }
+            85% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .hunter-tar-puddle {
+            position: absolute; width: calc(380px * var(--ability3-scale,1)); height: calc(100px * var(--ability3-scale,1));
+            bottom: var(--ability3-y,-20px); left: calc(50% - (190px * var(--ability3-scale,1)) + var(--ability3-x,0px));
+            background: radial-gradient(ellipse at center, rgba(10, 10, 15, 0.85) 0%, rgba(30, 30, 40, 0.5) 50%, transparent 70%);
+            border-radius: 50%;
+            border: 2px dashed rgba(80, 250, 123, 0.3);
+            opacity: 0;
+            transform: scale(0.5);
+            animation: puddleExpand 4.5s ease-out forwards;
+            z-index: 2;
+        }
+        @keyframes puddleExpand {
+            0% { transform: scale(0.2) rotate(var(--ability3-rot, 0deg)); opacity: 0; }
+            12% { transform: scale(1) rotate(var(--ability3-rot, 0deg)); opacity: 1; }
+            85% { opacity: 1; }
+            100% { transform: scale(1.1) rotate(var(--ability3-rot, 0deg)); opacity: 0; }
+        }
+
+        .butterfly-wrath-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1; overflow: visible;
+            transform: scale(var(--wings-scale, 1));
+            transform-origin: center center;
+        }
+        .butterfly-wing { position:absolute; width:220px; height:280px; top:var(--wings-y,60px); opacity:0; filter:drop-shadow(0 0 18px rgba(255,121,198,.9)); left:50%; transform-origin:bottom left; }
+        .butterfly-wing.left  { margin-left:calc(-24px - var(--wings-x,-12px) + var(--wings-pos-x,0px)); animation:wingAppearL 20s ease-out forwards; }
+        .butterfly-wing.right { margin-left:calc(var(--wings-x,-12px) + var(--wings-pos-x,0px)); animation:wingAppearR 20s ease-out forwards; }
+        .butterfly-aura { position:absolute; border-radius:50%; width:340px; height:340px; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); background:radial-gradient(circle,rgba(255,121,198,.35) 0%,rgba(189,147,249,.12) 50%,transparent 70%); box-shadow:0 0 60px 30px rgba(255,121,198,.25); animation:auraExpand 20s ease-out forwards; }
+        
+        @keyframes wingAppearR {
+            0%   { opacity:0; transform: scale(0.2) rotate(var(--ability4-rot, 0deg)); }
+            7%   { opacity:1; transform: scale(1.05) rotate(var(--ability4-rot, 0deg)); }
+            10%  { transform: scale(1) rotate(var(--ability4-rot, 0deg)); }
+            93%  { opacity:1; }
+            100% { opacity:0; transform: scale(0.95) rotate(var(--ability4-rot, 0deg)); }
+        }
+        @keyframes wingAppearL {
+            0%   { opacity:0; transform: scaleX(-0.2) scaleY(0.2) rotate(calc(-1 * var(--ability4-rot, 0deg))); }
+            7%   { opacity:1; transform: scaleX(-1.05) scaleY(1.05) rotate(calc(-1 * var(--ability4-rot, 0deg))); }
+            10%  { transform: scaleX(-1) scaleY(1) rotate(calc(-1 * var(--ability4-rot, 0deg))); }
+            93%  { opacity:1; }
+            100% { opacity:0; transform: scaleX(-1) scaleY(0.95) rotate(calc(-1 * var(--ability4-rot, 0deg))); }
+        }
+        @keyframes auraExpand {
+            0%   { transform: translate(-50%,-50%) scale(0); opacity: 0; }
+            7%   { transform: translate(-50%,-50%) scale(1.2); opacity: 1; }
+            12%  { transform: translate(-50%,-50%) scale(1); }
+            93%  { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%,-50%) scale(1); }
+        }
+
+        .butterfly-wrath-overlay.calibrating .butterfly-wing {
+            opacity: 0.95 !important;
+            animation: none !important;
+        }
+        .butterfly-wrath-overlay.calibrating .butterfly-wing.left {
+            transform: scaleX(-1) rotate(calc(-1 * var(--ability4-rot, 0deg))) !important;
+        }
+        .butterfly-wrath-overlay.calibrating .butterfly-wing.right {
+            transform: scale(1) rotate(var(--ability4-rot, 0deg)) !important;
+        }
+        .butterfly-wrath-overlay.calibrating .butterfly-aura {
+            transform: translate(-50%,-50%) scale(1) !important;
+            opacity: 0.8 !important;
+            animation: none !important;
+        }
+
+        .hunter-mend-pet {
+            position: absolute;
+            width: calc(100px * var(--ability5-scale, 1));
+            height: calc(80px * var(--ability5-scale, 1));
+            top: calc(50% - (40px * var(--ability5-scale, 1)) + var(--ability5-y, 0px));
+            left: calc(50% - (50px * var(--ability5-scale, 1)) + var(--ability5-x, 0px));
+            opacity: 0; filter: drop-shadow(0 0 20px rgba(80, 250, 123, 0.95));
+            animation: petMendFloat 2.0s ease-in-out forwards;
+            z-index: 10;
+        }
+        @keyframes petMendFloat {
+            0%   { transform: translateY(40px) scale(0.5) rotate(calc(-10deg + var(--ability5-rot, 0deg))); opacity: 0; }
+            15%  { transform: translateY(0) scale(1.1) rotate(calc(5deg + var(--ability5-rot, 0deg))); opacity: 1; }
+            50%  { transform: translateY(-10px) scale(1) rotate(calc(-5deg + var(--ability5-rot, 0deg))); opacity: 1; }
+            85%  { transform: translateY(0) scale(1.05) rotate(calc(3deg + var(--ability5-rot, 0deg))); opacity: 1; }
+            100% { transform: translateY(-30px) scale(0.7) rotate(calc(10deg + var(--ability5-rot, 0deg))); opacity: 0; }
+        }
+
+        .hunter-turtle-shell {
+            position: absolute;
+            width: calc(400px * var(--ability6-scale, 1));
+            height: calc(400px * var(--ability6-scale, 1));
+            top: calc(50% - (200px * var(--ability6-scale, 1)) + var(--ability6-y, 0px));
+            left: calc(50% - (200px * var(--ability6-scale, 1)) + var(--ability6-x, 0px));
+            opacity: 0;
+            animation: shellActivate 8s ease-in-out forwards;
+            pointer-events: none;
+            z-index: 6;
+        }
+        @keyframes shellActivate {
+            0%   { transform: scale(0.4) rotate(var(--ability6-rot, 0deg)); opacity: 0; }
+            10%  { transform: scale(1.05) rotate(var(--ability6-rot, 0deg)); opacity: 1; }
+            20%  { transform: scale(0.98) rotate(var(--ability6-rot, 0deg)); opacity: 1; }
+            85%  { transform: scale(1.02) rotate(var(--ability6-rot, 0deg)); opacity: 1; }
+            100% { transform: scale(0.8) rotate(var(--ability6-rot, 0deg)); opacity: 0; }
+        }
+
+        .hunter-harpoon {
+            position: absolute;
+            width: calc(240px * var(--ability7-scale, 1));
+            height: calc(80px * var(--ability7-scale, 1));
+            top: calc(50% - (40px * var(--ability7-scale, 1)) + var(--ability7-y, 0px));
+            left: calc(50% - (120px * var(--ability7-scale, 1)) + var(--ability7-x, 0px));
+            opacity: 0;
+            animation: harpoonLaunch 1.0s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+            z-index: 10;
+        }
+        @keyframes harpoonLaunch {
+            0% { transform: rotate(var(--ability7-rot, 0deg)) translate(-300px, 0px) scale(0.5); opacity: 0; }
+            15% { transform: rotate(var(--ability7-rot, 0deg)) translate(0px, 0px) scale(1.1); opacity: 1; }
+            50% { transform: rotate(var(--ability7-rot, 0deg)) translate(150px, 0px) scale(1); opacity: 1; }
+            80% { transform: rotate(var(--ability7-rot, 0deg)) translate(150px, 0px) scale(1); opacity: 1; }
+            100% { transform: rotate(var(--ability7-rot, 0deg)) translate(300px, 0px) scale(0.6); opacity: 0; }
+        }
+
+        .hunter-pet-slash {
+            position: absolute;
+            width: calc(300px * var(--ability8-scale, 1));
+            height: calc(300px * var(--ability8-scale, 1));
+            top: calc(50% - (150px * var(--ability8-scale, 1)) + var(--ability8-y, 0px));
+            left: calc(50% - (150px * var(--ability8-scale, 1)) + var(--ability8-x, 0px));
+            opacity: 0;
+            animation: clawSlash 0.8s cubic-bezier(0.15, 0.85, 0.35, 1.1) forwards;
+            z-index: 10;
+        }
+        @keyframes clawSlash {
+            0% { transform: scale(0.4) rotate(var(--ability8-rot, 0deg)); opacity: 0; }
+            15% { transform: scale(1.1) rotate(var(--ability8-rot, 0deg)); opacity: 1; }
+            60% { transform: scale(1) rotate(var(--ability8-rot, 0deg)); opacity: 1; }
+            100% { transform: scale(0.8) rotate(var(--ability8-rot, 0deg)); opacity: 0; }
+        }
+
+        .avenging-flash { position:absolute; width:320px; height:320px; border-radius:50%; top:50%; left:50%; transform:translate(-50%,-50%); background:radial-gradient(circle,rgba(255,121,198,.75) 0%,rgba(189,147,249,.35) 45%,transparent 70%); pointer-events:none; z-index:999; animation:flashFade .5s ease-out forwards; }
+        @keyframes flashFade { 0%{opacity:1} 100%{opacity:0} }
+        @keyframes screenShake { 0%,100%{transform:translate(0,0)} 20%,60%{transform:translate(-4px,4px)} 40%,80%{transform:translate(4px,-4px)} }
+        .shake-active { animation:screenShake .15s ease-in-out 2; }
+
+        .holy-particle { position:absolute; width:8px; height:8px; background:#ffd700; border-radius:50%; filter:drop-shadow(0 0 5px #ffae00); opacity:0; animation:floatHoly .8s ease-out forwards; }
+        @keyframes floatHoly { 0%{transform:translate(0,0) scale(1);opacity:0} 20%{opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0} }
+
+        .hunter-boomstick {
+            position: absolute;
+            pointer-events: none;
+            z-index: 15;
+            filter: drop-shadow(0 0 14px rgba(255, 200, 50, 0.8));
+        }
+        .hunter-boomstick-pellet {
+            position: absolute;
+            height: 3px;
+            width: 0px;
+            background: linear-gradient(to right, rgba(255,230,100,0) 0%, #f1fa8c 40%, #ffffff 100%);
+            opacity: 0;
+            transform-origin: left center;
+            z-index: 16;
+            border-radius: 1.5px;
+            box-shadow: 0 0 5px 1px rgba(241,250,140,0.7);
+            animation: pelletTrail 0.34s ease-out forwards;
+        }
+
+        .hunter-boomstick-flash {
+            position: absolute;
+            width: 56px;
+            height: 46px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffffff 0%, #f1fa8c 32%, #ffb86c 62%, rgba(255,85,85,0) 100%);
+            transform: translate(-50%, -50%);
+            filter: drop-shadow(0 0 12px #f1fa8c) drop-shadow(0 0 22px #ffb86c);
+            pointer-events: none;
+            z-index: 17;
+            opacity: 0;
+            animation: muzzleFlash 0.26s ease-out forwards;
+        }
+        @keyframes muzzleFlash {
+            0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.15); }
+            14%  { opacity: 1; transform: translate(-50%, -50%) scale(1.35); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+        }
+        @keyframes pelletTrail {
+            0%   { width: 0px;   opacity: 0; }
+            10%  { width: 25px;  opacity: 1; }
+            55%  { width: 95px;  opacity: 0.9; }
+            100% { width: 115px; opacity: 0; }
+        }
+        .bald-sparkle-container {
+            position: absolute;
+            top: 19%;
+            left: 61%;
+            width: 60px;
+            height: 60px;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            z-index: 10;
+        }
+
+        /* Halo circular expansivo */
+        .bald-sparkle-halo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.85);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Animaciones al activar la clase .shining */
+        .bald-shine-effect.shining .bald-sheen-line {
+            animation: baldSheenKeyframe 1.2s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+
+        .bald-shine-effect.shining .bald-sparkle-container {
+            animation: baldSparkleKeyframe 1.2s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+
+        .bald-shine-effect.shining .bald-sparkle-halo {
+            animation: baldHaloKeyframe 1.2s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+
+        @keyframes baldSheenKeyframe {
+            0% {
+                transform: scaleX(0);
+                opacity: 0;
+            }
+            25% {
+                transform: scaleX(1);
+                opacity: 0.95;
+            }
+            70% {
+                transform: scaleX(1.05);
+                opacity: 0.95;
+            }
+            100% {
+                transform: scaleX(1.1);
+                opacity: 0;
+            }
+        }
+
+        @keyframes baldSparkleKeyframe {
+            0% {
+                transform: translate(-50%, -50%) scale(0) rotate(-45deg);
+                opacity: 0;
+            }
+            12% {
+                transform: translate(-50%, -50%) scale(0) rotate(-45deg);
+                opacity: 0;
+            }
+            38% {
+                transform: translate(-50%, -50%) scale(1.2) rotate(45deg);
+                opacity: 1;
+                filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.95));
+            }
+            70% {
+                transform: translate(-50%, -50%) scale(1.0) rotate(90deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(0.5) rotate(135deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes baldHaloKeyframe {
+            0%, 18% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+            40% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 0.85;
+            }
+            80% {
+                transform: translate(-50%, -50%) scale(2.0);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2.0);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <main id="avatar-viewport">
+            <div id="avatar-wrapper" class="idle">
+                <div id="avatar-glow-ring"></div>
+                <div id="avatar-display">
+                    <img id="user-avatar-img" src="" alt="Avatar" style="display:none;">
+                    <div class="bald-shine-effect">
+                        <div class="bald-sheen-container">
+                            <div class="bald-sheen-line"></div>
+                        </div>
+                        <div class="bald-sparkle-container">
+                            <div class="bald-sparkle-halo"></div>
+                            <svg viewBox="0 0 100 100" class="bald-sparkle-star" style="width: 100%; height: 100%;">
+                                <path d="M 50,0 Q 50,50 100,50 Q 50,50 50,100 Q 50,50 0,50 Q 50,50 50,0 Z" fill="#fff" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+(function () {
+    const wrapper  = document.getElementById('avatar-wrapper');
+    const display  = document.getElementById('avatar-display');
+    const userImg  = document.getElementById('user-avatar-img');
+    const glowRing = document.getElementById('avatar-glow-ring');
+    const viewport = document.getElementById('avatar-viewport');
+
+    let cal = { legs_scale:0.83, legs_y:22, legs_x:0, wings_scale:1.0, wings_y:60, wings_x:-12, wings_pos_x:0, abilityCalibration: {} };
+    let lastAbilityTs = 0;
+    let isGlowEnabled = true;
+    let lastAvatarSrc = '';
+    let walkActive = false;
+    let activeAvatar = 'lolirot';
+
+    // ── Walking split display ──────────────────────────────
+    function getLegsOverlay() {
+        let legs = document.getElementById('legs-walk-overlay');
+        if (!legs) {
+            legs = document.createElement('img');
+            legs.id = 'legs-walk-overlay';
+            legs.className = 'elf-part legs-walk';
+            legs.style.position = 'absolute';
+            legs.style.top = '0';
+            legs.style.left = '0';
+            legs.style.width = '100%';
+            legs.style.height = '100%';
+            legs.style.objectFit = 'contain';
+            legs.style.pointerEvents = 'none';
+            legs.style.zIndex = '3';
+            
+            userImg.style.position = 'relative';
+            userImg.style.zIndex = '2';
+            
+            display.appendChild(legs);
+        }
+        return legs;
+    }
+
+    let walkFrame = 1;
+    let walkFrameIv = null;
+    function startWalkAnim() {
+        if (walkActive) return;
+
+        walkActive = true;
+        wrapper.classList.add('walking-active');
+
+        const isElf = activeAvatar === 'lolirot' || activeAvatar === 'lolirot_red';
+        if (isElf) {
+            wrapper.classList.add('active-elf-split');
+            wrapper.classList.remove('avatar-lolirot', 'avatar-lolirot_red');
+            wrapper.classList.add('avatar-' + activeAvatar);
+            const legs = getLegsOverlay();
+            legs.style.display = 'block';
+            legs.style.transform = `scale(${cal.legs_scale}) translate(${cal.legs_x}px,${cal.legs_y}px)`;
+            
+            clearInterval(walkFrameIv);
+            walkFrameIv = setInterval(() => {
+                walkFrame = walkFrame === 1 ? 2 : 1;
+                legs.src = `assets/${activeAvatar}/wow_chibi_legs_walk_${walkFrame}.png`;
+            }, 250);
+        }
+    }
+    function stopWalkAnim() {
+        walkActive = false;
+        wrapper.classList.remove('walking-active', 'active-elf-split', 'avatar-lolirot', 'avatar-lolirot_red');
+        clearInterval(walkFrameIv);
+        const legs = document.getElementById('legs-walk-overlay');
+        if (legs) legs.style.display = 'none';
+    }
+
+    // ── Speaking state ─────────────────────────────────────
+    function setSpeaking(val) {
+        if (val) {
+            wrapper.classList.add('speaking'); wrapper.classList.remove('idle');
+            glowRing.style.opacity = isGlowEnabled ? '0.8' : '0';
+        } else {
+            wrapper.classList.remove('speaking'); wrapper.classList.add('idle');
+            glowRing.style.opacity = '0';
+        }
+    }
+
+    // ── Avatar image ───────────────────────────────────────
+    function setAvatarSrc(src) {
+        if (!src || src === lastAvatarSrc) return;
+        lastAvatarSrc = src;
+        userImg.src = src;
+        userImg.style.display = 'block';
+
+        const match = src.match(/assets\/([^\/]+)/);
+        if (match && match[1]) {
+            activeAvatar = match[1];
+        }
+
+        // Actualizar máscara y visibilidad del brillo de la calva
+        const shineEl = document.querySelector('.bald-shine-effect');
+        if (shineEl) {
+            shineEl.style.setProperty('--avatar-mask-url', `url("${src}")`);
+            if (activeAvatar === 'wow_elf_bald') {
+                shineEl.style.display = 'block';
+            } else {
+                shineEl.style.display = 'none';
+            }
+        }
+
+        const splitTorso = document.querySelector('#split-elf-display .head-torso');
+        if (splitTorso) splitTorso.src = src;
+    }
+
+    // ── Ability animations ─────────────────────────────────
+    const wingSVG = `<svg viewBox="0 0 220 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="wg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff7a0"/><stop offset="50%" stop-color="#ffd700"/><stop offset="100%" stop-color="#f39c12"/></linearGradient></defs>
+      <path d="M200,20 Q220,60 180,100 Q220,80 200,140 Q230,110 210,170 Q240,150 200,220 Q160,260 100,280 Q140,220 120,180 Q80,240 60,280 Q80,200 60,160 Q30,180 20,220 Q10,160 40,120 Q20,100 10,60 Q60,100 80,60 Q60,20 100,10 Q140,-5 200,20Z" fill="url(#wg)" opacity="0.92"/>
+      <path d="M100,280 Q140,200 160,140 Q170,80 140,20" stroke="rgba(255,255,255,0.6)" stroke-width="2" fill="none"/>
+    </svg>`;
+
+    function getEC() {
+        let ec = wrapper.querySelector('.paladin-effect-container');
+        if (!ec) { ec = document.createElement('div'); ec.className = 'paladin-effect-container'; wrapper.appendChild(ec); }
+        return ec;
+    }
+
+    function spawnParticle(container, x, y, dx, dy, sz, color) {
+        const p = document.createElement('div'); p.className = 'holy-particle';
+        p.style.left=`${x}px`; p.style.top=`${y}px`;
+        p.style.setProperty('--dx',`${dx}px`); p.style.setProperty('--dy',`${dy}px`);
+        p.style.width = p.style.height = `${sz}px`;
+        if (color) {
+            p.style.background = color;
+            p.style.filter = `drop-shadow(0 0 5px ${color})`;
+        }
+        container.appendChild(p); setTimeout(()=>p.remove(), 1000);
+    }
+
+    function spawnSparks(container, count, x, y, goUp, color = null) {
+        for (let i = 0; i < count; i++) {
+            let dx, dy;
+            if (goUp) {
+                dx = (Math.random() - 0.5) * 60;
+                dy = -50 - Math.random() * 100;
+            } else {
+                const a = Math.random() * Math.PI * 2;
+                const d = 30 + Math.random() * 100;
+                dx = Math.cos(a) * d;
+                dy = Math.sin(a) * d;
+            }
+            const sz = 4 + Math.random() * 8;
+            spawnParticle(container, x, y, dx, dy, sz, color);
+        }
+    }
+
+    function spawnDivineRain(container, color = null) {
+        const p = document.createElement('div'); p.className = 'holy-particle';
+        p.style.left = `${Math.random() * 400}px`;
+        p.style.top  = `${Math.random() * 100}px`;
+        const dx = (Math.random()-.5)*30;
+        const dy = 80 + Math.random()*120;
+        p.style.setProperty('--dx', `${dx}px`); p.style.setProperty('--dy', `${dy}px`);
+        const sz = 3+Math.random()*7; p.style.width = p.style.height = `${sz}px`;
+        p.style.background = color || (Math.random() > .5 ? '#fff' : '#ffd700');
+        p.style.animationDuration = '.9s';
+        container.appendChild(p); setTimeout(() => p.remove(), 1000);
+    }
+
+    function spawnConsecrationSparks(container, xOffset = 0, yOffset = 0, color = null) {
+        const s = document.createElement('div'); s.className = 'holy-particle';
+        s.style.left = `${200 + xOffset + (Math.random()-.5)*320}px`; s.style.top = `${370 + yOffset + (Math.random()-.5)*40}px`;
+        s.style.setProperty('--dx', `${(Math.random()-.5)*20}px`); s.style.setProperty('--dy', `${-60-Math.random()*80}px`);
+        const sz = 3+Math.random()*6; s.style.width = s.style.height = `${sz}px`;
+        if (color) {
+            s.style.background = color;
+            s.style.filter = `drop-shadow(0 0 5px ${color})`;
+        }
+        container.appendChild(s); setTimeout(() => s.remove(), 1000);
+    }
+
+    function triggerAbility(action) {
+        if (action === 'bald_shine') {
+            const shineEl = document.querySelector('.bald-shine-effect');
+            if (shineEl) {
+                shineEl.classList.remove('shining');
+                void shineEl.offsetWidth; // Force reflow
+                shineEl.classList.add('shining');
+            }
+            return;
+        }
+
+        const ec = getEC();
+        const calData = cal.abilityCalibration && cal.abilityCalibration[action];
+        if (calData) {
+            ec.style.setProperty(`--${action}-scale`, calData.scale);
+            ec.style.setProperty(`--${action}-x`, `${calData.x}px`);
+            ec.style.setProperty(`--${action}-y`, `${calData.y}px`);
+            ec.style.setProperty(`--${action}-rot`, `${calData.rot !== undefined ? calData.rot : 0}deg`);
+        }
+
+        if (action === 'ability1') {
+            // Golpe de Raptor / Espada de Veneno Verde
+            const spear = document.createElement('div');
+            spear.className = 'hunter-spear';
+            spear.innerHTML = `<svg viewBox="0 0 190 52" style="transform:scaleX(-1)" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="sBGreen" x1="0%" y1="50%" x2="100%" y2="50%"><stop offset="0%" stop-color="#fff" stop-opacity="0.05"/><stop offset="15%" stop-color="#a0ffe0"/><stop offset="45%" stop-color="#ffffff"/><stop offset="75%" stop-color="#50fa7b"/><stop offset="100%" stop-color="#fff" stop-opacity="0.15"/></linearGradient><linearGradient id="sHGreen" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#263b2e"/><stop offset="50%" stop-color="#141f18"/><stop offset="100%" stop-color="#263b2e"/></linearGradient><filter id="sGGreen"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><polygon points="2,26 18,19 136,22 136,30 18,33" fill="url(#sBGreen)" filter="url(#sGGreen)"/><polygon points="0,26 16,18 16,34" fill="#ffffff" filter="url(#sGGreen)"/><line x1="6" y1="24" x2="132" y2="22" stroke="#fff" stroke-width="1.8" opacity="0.75"/><rect x="134" y="14" width="9" height="24" rx="2.5" fill="#50fa7b" stroke="#263b2e" stroke-width="1"/><rect x="143" y="22" width="36" height="8" rx="3" fill="url(#sHGreen)"/><line x1="152" y1="22" x2="152" y2="30" stroke="#141f18" stroke-width="1" opacity="0.5"/><line x1="159" y1="22" x2="159" y2="30" stroke="#141f18" stroke-width="1" opacity="0.5"/><line x1="166" y1="22" x2="166" y2="30" stroke="#141f18" stroke-width="1" opacity="0.5"/><circle cx="183" cy="26" r="7" fill="#50fa7b" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/></svg>`;
+            const arc = document.createElement('div');
+            arc.className = 'hunter-slash-arc';
+            ec.appendChild(spear);
+            ec.appendChild(arc);
+            viewport.classList.add('shake-active');
+            setTimeout(() => viewport.classList.remove('shake-active'), 300);
+
+            const scale = calData ? calData.scale : 1.0;
+            const xOffset = calData ? calData.x : 0;
+            const yOffset = calData ? calData.y : 0;
+            const rot = calData ? (calData.rot !== undefined ? calData.rot : 0) : 0;
+
+            const containerHeight = ec.offsetHeight || 400;
+            const x0 = 50 + xOffset;
+            const y0 = containerHeight * 0.2 + 26 + yOffset;
+            const L = 190 * scale;
+
+            const angleDeg = 15 + rot;
+            const angleRad = angleDeg * Math.PI / 180;
+
+            const tipX = x0 + L * Math.cos(angleRad);
+            const tipY = y0 + L * Math.sin(angleRad);
+
+            setTimeout(() => spawnSparks(ec, 14, tipX, tipY, false, '#50fa7b'), 300);
+            setTimeout(() => { spear.remove(); arc.remove(); }, 500);
+
+        } else if (action === 'ability2') {
+            // Bomba de Fuego Salvaje - animación JS para dirección real
+            const bomb = document.createElement('div');
+            bomb.className = 'hunter-bomb';
+            bomb.innerHTML = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="bmGrad" cx="40%" cy="40%" r="50%"><stop offset="0%" stop-color="#ffb86c"/><stop offset="100%" stop-color="#ff5555"/></radialGradient></defs><circle cx="50" cy="55" r="30" fill="url(#bmGrad)" stroke="#282a36" stroke-width="3"/><path d="M50,25 L50,15 Q55,10 65,15" fill="none" stroke="#f1fa8c" stroke-width="4"/><circle cx="65" cy="15" r="4" fill="#ff5555"/></svg>`;
+            bomb.style.animation = 'none';
+            bomb.style.opacity = '0';
+            ec.appendChild(bomb);
+
+            const xVal  = calData ? calData.x   : -30;
+            const yVal  = calData ? calData.y   : 100;
+            const rot   = calData ? (calData.rot !== undefined ? calData.rot : 45) : 45;
+            const scale = calData ? (calData.scale || 1.0) : 1.0;
+            const rotRad = rot * Math.PI / 180;
+            const D = 260;
+            const endOffX = D * Math.cos(rotRad);
+            const endOffY = D * Math.sin(rotRad);
+            const halfBomb = 42.5 * scale;
+            const coneCenterX = xVal + halfBomb + endOffX;
+            const coneCenterY = yVal + halfBomb + endOffY;
+            const coneSize = 400 * scale;
+            const bombDur = 500;
+            const bombStart = performance.now();
+
+            function animateBomb(now) {
+                const t = Math.min((now - bombStart) / bombDur, 1);
+                const dx = endOffX * t;
+                const dy = endOffY * t;
+                const spin = rot + 360 * t;
+                const sc = 0.4 + 0.6 * t;
+                const op = t < 0.25 ? t / 0.25 : 1;
+                bomb.style.transform = `translate(${dx}px, ${dy}px) rotate(${spin}deg) scale(${sc})`;
+                bomb.style.opacity = op;
+                if (t < 1) requestAnimationFrame(animateBomb);
+            }
+            requestAnimationFrame(animateBomb);
+
+            setTimeout(() => {
+                viewport.classList.add('shake-active');
+                setTimeout(() => viewport.classList.remove('shake-active'), 300);
+                const cone = document.createElement('div');
+                cone.className = 'hunter-fire-cone';
+                cone.style.left   = (coneCenterX - coneSize / 2) + 'px';
+                cone.style.top    = (coneCenterY - coneSize / 2) + 'px';
+                cone.style.width  = coneSize + 'px';
+                cone.style.height = coneSize + 'px';
+                ec.appendChild(cone);
+                let iv = setInterval(() => {
+                    if (!cone.parentNode) { clearInterval(iv); return; }
+                    spawnSparks(ec, 4, coneCenterX, coneCenterY, false, Math.random() > 0.5 ? '#ffb86c' : '#50fa7b');
+                }, 80);
+                setTimeout(() => { clearInterval(iv); cone.remove(); }, 1000);
+                bomb.remove();
+            }, 500);
+
+        } else if (action === 'ability3') {
+            // Trampa de Alquitrán
+            const puddle = document.createElement('div');
+            puddle.className = 'hunter-tar-puddle';
+            ec.appendChild(puddle);
+
+            const xVal = calData ? calData.x : 0;
+            const yVal = calData ? calData.y : 0;
+
+            let iv = setInterval(() => {
+                if (!puddle.parentNode) { clearInterval(iv); return; }
+                spawnConsecrationSparks(ec, xVal, yVal, '#21222c');
+            }, 100);
+
+            setTimeout(() => {
+                clearInterval(iv);
+                puddle.remove();
+            }, 4500);
+
+        } else if (action === 'ability4') {
+            // Takedown: Flash explosivo + chispas
+            wrapper.querySelectorAll('.butterfly-wrath-overlay').forEach(el => el.remove());
+            const flash = document.createElement('div');
+            flash.className = 'avenging-flash';
+            wrapper.appendChild(flash);
+            setTimeout(() => flash.remove(), 600);
+
+            viewport.classList.add('shake-active');
+            setTimeout(() => viewport.classList.remove('shake-active'), 300);
+
+            const xVal4 = calData ? calData.x : 0;
+            const yVal4 = calData ? calData.y : 0;
+
+            // Explosión inicial grande de chispas
+            spawnSparks(ec, 20, 200 + xVal4, 200 + yVal4, false, '#ff79c6');
+            setTimeout(() => spawnSparks(ec, 15, 200 + xVal4, 200 + yVal4, true, '#bd93f9'), 80);
+            setTimeout(() => spawnSparks(ec, 15, 200 + xVal4, 200 + yVal4, false, '#8be9fd'), 160);
+
+            // Lluvia de chispas cayendo
+            let rainIv4 = setInterval(() => {
+                spawnSparks(ec, 3, 200 + xVal4 + (Math.random() - 0.5) * 80, 200 + yVal4, false,
+                    Math.random() > 0.5 ? '#ff79c6' : '#bd93f9');
+            }, 80);
+            setTimeout(() => clearInterval(rainIv4), 2500);
+
+        } else if (action === 'ability5') {
+            // Aliviar Mascota: Huella flotante
+            const mend = document.createElement('div');
+            mend.className = 'hunter-mend-pet';
+            mend.innerHTML = `<svg viewBox="0 0 100 100" width="100%" height="100%"><defs><linearGradient id="mpGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#50fa7b"/><stop offset="100%" stop-color="#8be9fd"/></linearGradient></defs><circle cx="50" cy="55" r="20" fill="url(#mpGrad)"/><circle cx="25" cy="25" r="10" fill="url(#mpGrad)"/><circle cx="42" cy="15" r="11" fill="url(#mpGrad)"/><circle cx="62" cy="15" r="11" fill="url(#mpGrad)"/><circle cx="78" cy="27" r="10" fill="url(#mpGrad)"/></svg>`;
+            ec.appendChild(mend);
+            
+            const xVal = calData ? calData.x : 0;
+            const yVal = calData ? calData.y : 0;
+
+            let iv = setInterval(() => {
+                if (!mend.parentNode) { clearInterval(iv); return; }
+                spawnSparks(ec, 2, 200 + xVal, 200 + yVal, true, '#50fa7b');
+            }, 120);
+
+            setTimeout(() => { clearInterval(iv); mend.remove(); }, 2000);
+
+        } else if (action === 'ability6') {
+            // Aspecto de la Tortuga: Escudo Caparazón Verde
+            const shell = document.createElement('div');
+            shell.className = 'hunter-turtle-shell';
+            shell.innerHTML = `<svg viewBox="0 0 100 100" width="100%" height="100%"><defs><linearGradient id="shGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#50fa7b" stop-opacity="0.55"/><stop offset="100%" stop-color="#8be9fd" stop-opacity="0.25"/></linearGradient><filter id="shGlow"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><circle cx="50" cy="50" r="46" fill="url(#shGrad)" stroke="#50fa7b" stroke-width="1.2" filter="url(#shGlow)"/><circle cx="50" cy="50" r="40" fill="none" stroke="#8be9fd" stroke-width="0.5" opacity="0.4"/><!-- Hex center --><polygon points="50,28 62,35 62,49 50,56 38,49 38,35" stroke="#50fa7b" stroke-width="1.2" fill="rgba(80,250,123,0.08)"/><!-- Surrounding hex segments --><polygon points="50,56 62,63 62,77 50,84 38,77 38,63" stroke="#50fa7b" stroke-width="1" fill="none" opacity="0.7"/><polygon points="50,5  62,12 62,26 50,33 38,26 38,12" stroke="#8be9fd" stroke-width="1" fill="none" opacity="0.6"/><polygon points="74,35 86,42 86,56 74,63 62,56 62,42" stroke="#50fa7b" stroke-width="1" fill="none" opacity="0.6"/><polygon points="26,35 38,42 38,56 26,63 14,56 14,42" stroke="#50fa7b" stroke-width="1" fill="none" opacity="0.6"/></svg>`;
+            ec.appendChild(shell);
+
+            const xVal = calData ? calData.x : 0;
+            const yVal = calData ? calData.y : 0;
+
+            let iv = setInterval(() => {
+                if (!shell.parentNode) { clearInterval(iv); return; }
+                spawnSparks(ec, 2, 200 + xVal, 200 + yVal, false, '#8be9fd');
+            }, 150);
+
+            setTimeout(() => { clearInterval(iv); shell.remove(); }, 8000);
+
+        } else if (action === 'ability7') {
+            // Arpón - Jabalina de Cazadora
+            const harpoon = document.createElement('div');
+            harpoon.className = 'hunter-harpoon';
+            harpoon.innerHTML = `<svg viewBox="0 0 240 80" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="hpShaft" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#1a3a1a" stop-opacity="0.4"/><stop offset="20%" stop-color="#50fa7b"/><stop offset="55%" stop-color="#c8ffe0"/><stop offset="80%" stop-color="#8be9fd"/><stop offset="100%" stop-color="#50fa7b" stop-opacity="0.2"/></linearGradient><linearGradient id="hpTip" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#8be9fd"/><stop offset="100%" stop-color="#ffffff"/></linearGradient><filter id="hpGlow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><!-- Shaft --><rect x="18" y="37" width="185" height="6" rx="3" fill="url(#hpShaft)" filter="url(#hpGlow)"/><!-- Tip (tri-blade) --><polygon points="203,20 238,40 203,60" fill="url(#hpTip)" stroke="#ffffff" stroke-width="1"/><polygon points="203,29 228,40 203,51" fill="#ffffff" opacity="0.5"/><!-- Rear fin --><polygon points="18,37 4,26 12,40 4,54 18,43" fill="#50fa7b" opacity="0.9" filter="url(#hpGlow)"/><!-- Barb 1 --><polygon points="75,37 88,24 88,37" fill="#50fa7b" opacity="0.8"/><polygon points="75,43 88,56 88,43" fill="#50fa7b" opacity="0.6"/><!-- Barb 2 --><polygon points="120,37 133,24 133,37" fill="#8be9fd" opacity="0.8"/><polygon points="120,43 133,56 133,43" fill="#8be9fd" opacity="0.6"/><!-- Energy rings --><ellipse cx="45" cy="40" rx="9" ry="6" fill="none" stroke="#50fa7b" stroke-width="1.2" opacity="0.7"/><ellipse cx="45" cy="40" rx="14" ry="9" fill="none" stroke="#50fa7b" stroke-width="0.6" opacity="0.35"/></svg>`;
+            ec.appendChild(harpoon);
+            viewport.classList.add('shake-active');
+            setTimeout(() => viewport.classList.remove('shake-active'), 300);
+
+            const xVal = calData ? calData.x : 0;
+            const yVal = calData ? calData.y : 0;
+            const rot7 = calData ? (calData.rot !== undefined ? calData.rot : 0) : 0;
+            const rotRad7 = rot7 * Math.PI / 180;
+
+            // Chispas en el punto de impacto (derecha del harpón)
+            setTimeout(() => {
+                const tipX = 200 + xVal + 240 * Math.cos(rotRad7);
+                const tipY = 200 + yVal + 240 * Math.sin(rotRad7);
+                spawnSparks(ec, 14, tipX, tipY, false, '#8be9fd');
+                spawnSparks(ec, 8,  tipX, tipY, false, '#50fa7b');
+            }, 400);
+
+            let iv = setInterval(() => {
+                if (!harpoon.parentNode) { clearInterval(iv); return; }
+                spawnSparks(ec, 1, 200 + xVal, 200 + yVal, false, '#8be9fd');
+            }, 120);
+
+            setTimeout(() => { clearInterval(iv); harpoon.remove(); }, 1000);
+
+        } else if (action === 'ability9') {
+            // Boomstick - Escopeta de doble cañón (animación JS pura)
+            const xVal9  = calData ? calData.x : 0;
+            const yVal9  = calData ? calData.y : 0;
+            const rot9   = calData ? (calData.rot !== undefined ? calData.rot : 0) : 0;
+            const scale9 = calData ? (calData.scale || 1.0) : 1.0;
+
+            const gunW = 240 * scale9;
+            const gunH = 50 * scale9;
+            const gunLeft = 200 - gunW / 2 + xVal9;
+            const gunTop  = 200 - gunH / 2 + yVal9;
+
+            const gun = document.createElement('div');
+            gun.className = 'hunter-boomstick';
+            gun.style.width  = gunW + 'px';
+            gun.style.height = gunH + 'px';
+            gun.style.left   = gunLeft + 'px';
+            gun.style.top    = gunTop  + 'px';
+            gun.style.opacity = '0';
+            gun.style.transformOrigin = '18% 50%';
+            gun.innerHTML = `<svg viewBox="0 0 240 50" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bsG" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#2a2c3e"/><stop offset="40%" stop-color="#5a5c7a"/><stop offset="100%" stop-color="#2a2c3e"/></linearGradient><linearGradient id="bsBL" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7a8fb0"/><stop offset="45%" stop-color="#b8d0f0"/><stop offset="100%" stop-color="#5a6a8a"/></linearGradient><radialGradient id="bsF" cx="90%" cy="50%" r="55%"><stop offset="0%" stop-color="#ffffff"/><stop offset="30%" stop-color="#f1fa8c"/><stop offset="65%" stop-color="#ffb86c" stop-opacity="0.6"/><stop offset="100%" stop-color="#ff5555" stop-opacity="0"/></radialGradient><filter id="bsGl"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><!-- Stock --><rect x="3" y="19" width="34" height="14" rx="3.5" fill="url(#bsG)"/><rect x="5" y="21" width="28" height="10" rx="2" fill="#1a1c28" opacity="0.7"/><!-- Pump grip --><rect x="24" y="27" width="16" height="12" rx="3" fill="#1e2030"/><rect x="26" y="29" width="12" height="2" rx="1" fill="#44475a"/><rect x="26" y="33" width="12" height="2" rx="1" fill="#44475a"/><!-- Upper barrel --><rect x="40" y="17" width="176" height="8" rx="4" fill="url(#bsBL)" filter="url(#bsGl)"/><!-- Lower barrel --><rect x="40" y="25" width="176" height="8" rx="4" fill="url(#bsBL)" opacity="0.8" filter="url(#bsGl)"/><!-- Barrel top shine --><line x1="44" y1="20" x2="212" y2="20" stroke="rgba(200,220,255,0.6)" stroke-width="1.8" stroke-linecap="round"/><!-- Muzzle cap --><rect x="214" y="16" width="6" height="18" rx="2.5" fill="#8be9fd" opacity="0.95" filter="url(#bsGl)"/><!-- Ejected shell casing --><rect x="38" y="10" width="7" height="11" rx="2.5" fill="#f1fa8c" opacity="0.85" filter="url(#bsGl)" transform="rotate(-25 41 16)"/></svg>`;
+            ec.appendChild(gun);
+
+            // Rotate barrel end around pivot (transformOrigin: 18% 50%) to correctly align muzzle flash and pellets when rotated
+            const rad9 = rot9 * Math.PI / 180;
+            const pivotX = gunLeft + gunW * 0.18;
+            const pivotY = gunTop + gunH * 0.50;
+            const relEndX = (gunW - 28 * scale9) - (gunW * 0.18);
+            const barrelEndX = pivotX + relEndX * Math.cos(rad9);
+            const barrelMidY = pivotY + relEndX * Math.sin(rad9);
+
+            // Muzzle flash spawns separately when gun fires (not as static SVG)
+            setTimeout(() => {
+                const mflash = document.createElement('div');
+                mflash.className = 'hunter-boomstick-flash';
+                mflash.style.left = barrelEndX + 'px';
+                mflash.style.top  = barrelMidY + 'px';
+                ec.appendChild(mflash);
+                setTimeout(() => mflash.remove(), 300);
+            }, 45);
+
+            viewport.classList.add('shake-active');
+            setTimeout(() => viewport.classList.remove('shake-active'), 300);
+
+            // JS-based recoil animation (no CSS vars in keyframes)
+            const gunStart = performance.now();
+            const gunDur   = 620;
+            function animateGun(now) {
+                const t = Math.min((now - gunStart) / gunDur, 1);
+
+                // Recoil curve: quick kick back → settle
+                let kickX = 0, kickRot = 0;
+                if (t < 0.18) {
+                    const p = t / 0.18;
+                    kickX   = -26 * p;
+                    kickRot = -5 * p;
+                } else if (t < 0.42) {
+                    const p = (t - 0.18) / 0.24;
+                    kickX   = -26 + 18 * p;
+                    kickRot = -5 + 5 * p;
+                } else {
+                    kickX   = -8;
+                    kickRot = 0;
+                }
+                const op = t < 0.06 ? t / 0.06 : t > 0.78 ? 1 - (t - 0.78) / 0.22 : 1;
+                gun.style.transform = `rotate(${rot9 + kickRot}deg) translate(${kickX}px, ${kickRot * 0.35}px)`;
+                gun.style.opacity   = op;
+                if (t < 1) requestAnimationFrame(animateGun);
+                else gun.remove();
+            }
+            requestAnimationFrame(animateGun);
+
+            const spreadAngles = [-30, -18, -6, 6, 18, 30];
+
+            // Spawn pellet trails
+            spreadAngles.forEach((ang, i) => {
+                setTimeout(() => {
+                    const pellet = document.createElement('div');
+                    pellet.className = 'hunter-boomstick-pellet';
+                    const totalAngle = rot9 + ang;
+                    pellet.style.left = barrelEndX + 'px';
+                    pellet.style.top  = barrelMidY + 'px';
+                    pellet.style.transform = `rotate(${totalAngle}deg)`;
+                    ec.appendChild(pellet);
+                    setTimeout(() => pellet.remove(), 400);
+                }, 45 + i * 20);
+            });
+
+            // Impact sparks where pellets land
+            setTimeout(() => {
+                spreadAngles.forEach(ang => {
+                    const rad  = (rot9 + ang) * Math.PI / 180;
+                    const dist = 85 + Math.random() * 55;
+                    spawnSparks(ec, 3,
+                        barrelEndX + dist * Math.cos(rad),
+                        barrelMidY + dist * Math.sin(rad),
+                        false, Math.random() > 0.5 ? '#f1fa8c' : '#ffb86c');
+                });
+            }, 215);
+
+        } else if (action === 'ability8') {
+            // Comando de Matar: Zarpazo Espectral Naranja/Verde
+            const slash = document.createElement('div');
+            slash.className = 'hunter-pet-slash';
+            slash.innerHTML = `<svg viewBox="0 0 200 200" width="100%" height="100%"><path d="M20,180 Q60,100 180,20 M50,190 Q90,110 190,40 M10,160 Q40,90 160,10" stroke="#ffb86c" stroke-width="8" stroke-linecap="round" fill="none" filter="drop-shadow(0 0 10px #ff5555)"/><path d="M180,180 Q100,100 20,20" stroke="#50fa7b" stroke-width="12" stroke-linecap="round" fill="none" opacity="0.4" filter="drop-shadow(0 0 15px #50fa7b)"/></svg>`;
+            ec.appendChild(slash);
+            viewport.classList.add('shake-active');
+            setTimeout(() => viewport.classList.remove('shake-active'), 300);
+
+            const xVal = calData ? calData.x : 0;
+            const yVal = calData ? calData.y : 0;
+
+            let iv = setInterval(() => {
+                if (!slash.parentNode) { clearInterval(iv); return; }
+                spawnSparks(ec, 3, 200 + xVal, 200 + yVal, false, Math.random() > 0.5 ? '#ffb86c' : '#ff5555');
+            }, 80);
+
+            setTimeout(() => { clearInterval(iv); slash.remove(); }, 800);
+        }
+    }
+    // ── Poll /display_state ────────────────────────────────
+    async function poll() {
+        try {
+            const r = await fetch('/display_state', {cache:'no-store'});
+            if (!r.ok) return;
+            const s = await r.json();
+
+            // Sincronizar Modo Calibración de Alas en tiempo real en OBS
+            if (s.wings_cal_active) {
+                let overlay = wrapper.querySelector('.avenging-wrath-overlay.calibrating');
+                if (!overlay) {
+                    wrapper.querySelectorAll('.avenging-wrath-overlay').forEach(el => el.remove());
+                    overlay = document.createElement('div');
+                    overlay.className = 'avenging-wrath-overlay calibrating';
+                    const wingL = document.createElement('div'); wingL.className = 'holy-wing left'; wingL.innerHTML = wingSVG;
+                    const wingR = document.createElement('div'); wingR.className = 'holy-wing right'; wingR.innerHTML = wingSVG;
+                    const aura  = document.createElement('div'); aura.className = 'avenging-aura';
+                    overlay.appendChild(aura); overlay.appendChild(wingL); overlay.appendChild(wingR);
+                    wrapper.appendChild(overlay);
+                }
+            } else {
+                const overlay = wrapper.querySelector('.avenging-wrath-overlay.calibrating');
+                if (overlay) {
+                    overlay.remove();
+                }
+            }
+
+            // Calibración
+            if (s.calibration) {
+                Object.assign(cal, s.calibration);
+                
+                // Actualizar en tiempo real los overlays de alas activos en OBS
+                document.querySelectorAll('.avenging-wrath-overlay').forEach(ov => {
+                    ov.style.setProperty('--wings-scale', cal.wings_scale);
+                    ov.style.setProperty('--wings-y', `${cal.wings_y}px`);
+                    ov.style.setProperty('--wings-x', `${cal.wings_x}px`);
+                    ov.style.setProperty('--wings-pos-x', `${cal.wings_pos_x}px`);
+                    const calData = cal.abilityCalibration && cal.abilityCalibration['ability4'];
+                    ov.style.setProperty('--ability4-rot', `${calData ? (calData.rot !== undefined ? calData.rot : 0) : 0}deg`);
+                });
+            }
+
+            // Sincronizar configuración de animación y estilo
+            if (s.bounceHeight !== undefined) {
+                const ratio = s.bounceHeight / 20.0;
+                document.documentElement.style.setProperty('--bounce-height', `${s.bounceHeight}px`);
+                document.documentElement.style.setProperty('--bounce-scale-x-40', 1.0 + 0.03 * ratio);
+                document.documentElement.style.setProperty('--bounce-scale-y-40', 1.0 - 0.03 * ratio);
+                document.documentElement.style.setProperty('--bounce-scale-x-100', 1.0 - 0.03 * ratio);
+                document.documentElement.style.setProperty('--bounce-scale-y-100', 1.0 + 0.05 * ratio);
+            }
+            if (s.bounceSpeed !== undefined) {
+                document.documentElement.style.setProperty('--bounce-speed', `${s.bounceSpeed}ms`);
+            }
+            if (s.avatarScale !== undefined) {
+                document.documentElement.style.setProperty('--avatar-scale', s.avatarScale);
+            }
+            if (s.avatarX !== undefined) {
+                document.documentElement.style.setProperty('--avatar-x', `${s.avatarX}px`);
+            }
+            if (s.avatarY !== undefined) {
+                document.documentElement.style.setProperty('--avatar-y', `${s.avatarY}px`);
+            }
+            if (s.isGlowEnabled !== undefined) {
+                isGlowEnabled = s.isGlowEnabled;
+                if (s.speaking && isGlowEnabled) {
+                    glowRing.style.opacity = '0.8';
+                } else {
+                    glowRing.style.opacity = '0';
+                }
+            }
+
+            // Avatar src (con fallback por si el panel aún no se ha abierto tras un reinicio)
+            setAvatarSrc(s.avatar_src || ('assets/' + (s.activeAvatar || 'lolirot') + '/wow_chibi_idle.png'));
+
+            // Speaking
+            setSpeaking(s.speaking);
+
+            // Walking
+            if (s.walking && !walkActive) startWalkAnim();
+            if (!s.walking && walkActive) stopWalkAnim();
+
+            // Sincronizar Especialidad (Spec) del Paladín
+            if (s.paladin_spec) {
+                localStorage.setItem('giftuber_paladin_spec', s.paladin_spec);
+            }
+
+            // Sincronizar habilidades concurrentes desde el historial
+            if (s.ability_history && Array.isArray(s.ability_history)) {
+                if (lastAbilityTs === 0) {
+                    // Inicializar timestamp al máximo actual para no disparar animaciones viejas al arrancar
+                    s.ability_history.forEach(item => {
+                        if (item.ts > lastAbilityTs) {
+                            lastAbilityTs = item.ts;
+                        }
+                    });
+                    if (s.ability_ts && s.ability_ts > lastAbilityTs) {
+                        lastAbilityTs = s.ability_ts;
+                    }
+                } else {
+                    s.ability_history.forEach(item => {
+                        if (item.ts > lastAbilityTs) {
+                            lastAbilityTs = item.ts;
+                            triggerAbility(item.ability);
+                        }
+                    });
+                }
+            } else if (s.ability && s.ability_ts) {
+                if (lastAbilityTs === 0) {
+                    lastAbilityTs = s.ability_ts;
+                } else if (s.ability_ts > lastAbilityTs) {
+                    lastAbilityTs = s.ability_ts;
+                    triggerAbility(s.ability);
+                }
+            }
+        } catch (_) {}
+        setTimeout(poll, 100);
+    }
+
+    const shineEl = document.querySelector('.bald-shine-effect');
+    if (shineEl) {
+        shineEl.addEventListener('animationend', () => {
+            shineEl.classList.remove('shining');
+        });
+    }
+
+    // Iniciar polling
+    poll();
+})();
+</script>
+</body>
+</html>
