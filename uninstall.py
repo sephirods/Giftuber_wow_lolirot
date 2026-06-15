@@ -231,55 +231,36 @@ class GiftuberUninstallerApp:
                     except Exception as e:
                         print(f"Error removing user appdata directory: {e}")
                         
-            # Step 5: Schedule self-deletion via PowerShell temp file
+            # Step 5: Schedule self-deletion via CMD batch in %TEMP%
             self.status_var.set("Programando eliminación de la carpeta de instalación...")
             self.progress['value'] = 95
             self.root.update()
             
-            # Directorio de instalación real (donde vive el .exe instalado)
+            # Directorio de instalación real
             if getattr(sys, 'frozen', False):
                 install_dir = os.path.dirname(os.path.abspath(sys.executable))
             else:
                 install_dir = os.path.dirname(os.path.abspath(__file__))
-            
-            current_pid = os.getpid()
 
-            # Escapar la ruta para PowerShell (comillas simples → dobles)
-            install_dir_ps = install_dir.replace("'", "''")
+            # Batch en %TEMP% — independiente de la carpeta que vamos a borrar
+            bat_script = os.path.join(tempfile.gettempdir(), 'giftuber_uninstall.bat')
+            bat_content = (
+                "@echo off\r\n"
+                "timeout /t 3 /nobreak > nul\r\n"
+                f'rmdir /s /q "{install_dir}"\r\n'
+                'del "%~f0"\r\n'
+            )
+            with open(bat_script, 'w', encoding='utf-8') as f:
+                f.write(bat_content)
 
-            # Crear script .ps1 en %TEMP% para no depender de la carpeta que vamos a borrar
-            ps_script = os.path.join(tempfile.gettempdir(), "giftuber_uninstall_cleanup.ps1")
-            ps_content = f"""# Giftuber uninstall cleanup
-$installDir = '{install_dir_ps}'
-$pid_to_wait = {current_pid}
-
-# Esperar a que el proceso desinstalador termine (por PID exacto)
-Start-Sleep -Seconds 1
-$proc = Get-Process -Id $pid_to_wait -ErrorAction SilentlyContinue
-if ($proc) {{
-    $proc.WaitForExit(10000)
-}}
-Start-Sleep -Seconds 1
-
-# Borrar la carpeta de instalación completa
-if (Test-Path $installDir) {{
-    Remove-Item -Path $installDir -Recurse -Force -ErrorAction SilentlyContinue
-}}
-
-# Auto-eliminarse
-Remove-Item -Path '{ps_script.replace("'", "''")}' -Force -ErrorAction SilentlyContinue
-"""
-            with open(ps_script, 'w', encoding='utf-8') as f:
-                f.write(ps_content)
-
-            # Lanzar el script desacoplado desde %TEMP%
+            # Lanzar como proceso 100% independiente del padre
             subprocess.Popen(
-                ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ps_script],
+                ["cmd", "/c", "start", "", "/min", "cmd", "/c", bat_script],
                 creationflags=0x08000000,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
-            
+
             self.progress['value'] = 100
             self.status_var.set("Desinstalación completada con éxito.")
             self.root.update()
@@ -291,6 +272,7 @@ Remove-Item -Path '{ps_script.replace("'", "''")}' -Force -ErrorAction SilentlyC
             
             self.root.destroy()
             sys.exit(0)
+
             
         except Exception as e:
             messagebox.showerror("Error", f"Ocurrió un error al desinstalar: {e}")

@@ -296,91 +296,53 @@ class GiftuberHandler(http.server.SimpleHTTPRequestHandler):
                 
                 print(f"[*] Descargando actualización desde: {download_url}...")
 
-                # Directorio real de instalación (donde vive el .exe o server.py)
-                import sys
+                import sys, tempfile
                 exe_actual = sys.executable
                 if getattr(sys, 'frozen', False):
                     current_dir = os.path.dirname(exe_actual)
-                    run_command = f"Start-Process -FilePath '{exe_actual.replace(chr(39), chr(39)*2)}'"
                 else:
                     current_dir = os.path.dirname(os.path.abspath(__file__))
-                    run_command = f"Start-Process -FilePath 'python' -ArgumentList 'server.py'"
 
-                # Definir rutas absolutas para el updater
                 zip_temp_path = os.path.join(current_dir, 'project_update.zip')
-                ps_script_path = os.path.join(current_dir, 'updater.ps1')
-                
+                cal_path      = os.path.join(current_dir, 'giftuber_calibration.json')
+                cal_bak_path  = os.path.join(current_dir, 'giftuber_calibration.json.bak')
+
                 # Descargar el zip
                 req = urllib.request.Request(download_url, headers={'User-Agent': 'Mozilla/5.0'})
                 with urllib.request.urlopen(req, timeout=40, context=ssl_context) as response, open(zip_temp_path, 'wb') as out_file:
                     out_file.write(response.read())
                 
-                print("[*] Descarga completada. Creando script de actualización en PowerShell...")
-                
-                current_pid = os.getpid()
-                
-                # Escapar rutas para PowerShell (comillas simples dobles)
-                install_dir_ps  = current_dir.replace("'", "''")
-                zip_abs_ps      = zip_temp_path.replace("'", "''")
-                cal_abs_ps      = os.path.join(current_dir, 'giftuber_calibration.json').replace("'", "''")
-                cal_bak_abs_ps  = os.path.join(current_dir, 'giftuber_calibration.json.bak').replace("'", "''")
-                ps_abs_ps       = ps_script_path.replace("'", "''")
+                print("[*] Descarga completada. Creando script de actualización (CMD batch)...")
 
-                ps_content = f"""# Script de actualización de Giftuber
-# Usar siempre rutas absolutas para no depender del CWD de PowerShell
-$installDir = '{install_dir_ps}'
-Set-Location -Path $installDir
+                # Escribir batch en %TEMP% — completamente independiente de la carpeta de instalación
+                bat_script = os.path.join(tempfile.gettempdir(), 'giftuber_update.bat')
 
-Start-Sleep -Seconds 2
-$process = Get-Process -Id {current_pid} -ErrorAction SilentlyContinue
-if ($process) {{
-    $process.WaitForExit(5000)
-}}
+                if getattr(sys, 'frozen', False):
+                    launch_line = f'start "" "{exe_actual}"'
+                else:
+                    launch_line = f'start "" /min cmd /c python "{os.path.join(current_dir, "server.py")}"'
 
-# Respaldar calibración
-if (Test-Path '{cal_abs_ps}') {{
-    Copy-Item '{cal_abs_ps}' '{cal_bak_abs_ps}' -Force
-}}
+                bat_content = (
+                    "@echo off\r\n"
+                    "timeout /t 4 /nobreak > nul\r\n"
+                    f'if exist "{cal_path}" copy /y "{cal_path}" "{cal_bak_path}"\r\n'
+                    f'tar -xf "{zip_temp_path}" -C "{current_dir}"\r\n'
+                    f'if exist "{cal_bak_path}" move /y "{cal_bak_path}" "{cal_path}"\r\n'
+                    f'if exist "{zip_temp_path}" del /f /q "{zip_temp_path}"\r\n'
+                    f'{launch_line}\r\n'
+                    f'del "%~f0"\r\n'
+                )
 
-# Extraer actualización con ruta absoluta
-Expand-Archive -Path '{zip_abs_ps}' -DestinationPath '{install_dir_ps}' -Force
+                with open(bat_script, 'w', encoding='utf-8') as f:
+                    f.write(bat_content)
 
-# Restaurar calibración
-if (Test-Path '{cal_bak_abs_ps}') {{
-    Move-Item -Force '{cal_bak_abs_ps}' '{cal_abs_ps}'
-}}
+                # Lanzar via "start" de cmd → proceso 100% independiente del padre
+                print("[*] Ejecutando updater batch en segundo plano...")
+                subprocess.Popen(
+                    ["cmd", "/c", "start", "", "/min", "cmd", "/c", bat_script],
+                    creationflags=0x08000000
+                )
 
-# Eliminar el archivo zip temporal
-if (Test-Path '{zip_abs_ps}') {{
-    Remove-Item '{zip_abs_ps}' -Force
-}}
-
-# Limpiar variables de entorno de PyInstaller para evitar conflictos de DLL
-$env:_MEIPASS = $null
-if ($env:PATH) {{
-    $env:PATH = (($env:PATH -split ';') | Where-Object {{ $_ -notlike '*_MEI*' }}) -join ';'
-}}
-
-# Iniciar la nueva versión
-{run_command}
-
-# Auto-eliminarse
-Remove-Item '{ps_abs_ps}' -Force -ErrorAction SilentlyContinue
-"""
-                with open(ps_script_path, 'w', encoding='utf-8') as f:
-                    f.write(ps_content)
-                
-                # Ejecutar script de PowerShell de manera desacoplada sin heredar variables de PyInstaller
-                print("[*] Ejecutando updater.ps1 en segundo plano...")
-                env = os.environ.copy()
-                env.pop('_MEIPASS', None)
-                if 'PATH' in env:
-                    path_dirs = env['PATH'].split(os.pathsep)
-                    cleaned_dirs = [d for d in path_dirs if '_MEI' not in d]
-                    env['PATH'] = os.pathsep.join(cleaned_dirs)
-                subprocess.Popen(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ps_script_path], 
-                                 creationflags=0x08000000, env=env)
-                
                 # Responder afirmativo y cerrar la app
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
@@ -388,7 +350,6 @@ Remove-Item '{ps_abs_ps}' -Force -ErrorAction SilentlyContinue
                 self.end_headers()
                 self.wfile.write('{"ok": true, "message": "Actualización iniciada"}'.encode('utf-8'))
                 
-                # Retardar un segundo y salir
                 def kill_app():
                     time.sleep(1)
                     kill_ahk()
@@ -402,6 +363,7 @@ Remove-Item '{ps_abs_ps}' -Force -ErrorAction SilentlyContinue
                 self.end_headers()
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
                 return
+
 
         if self.path == '/restart_services':
             restart_ahk_process()
