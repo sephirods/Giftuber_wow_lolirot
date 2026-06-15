@@ -176,12 +176,10 @@ load_calibration()
 
 class GiftuberHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
-        # Evitar cache de HTML/JS/CSS en el navegador durante el desarrollo
-        clean_path = self.path.split('?')[0]
-        if clean_path.endswith(('.js', '.css', '.html', '.png', '.jpg')) or clean_path == '/':
-            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-            self.send_header('Pragma', 'no-cache')
-            self.send_header('Expires', '0')
+        # Evitar cache de HTML/JS/CSS/API en el navegador
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
         super().end_headers()
 
     def do_GET(self):
