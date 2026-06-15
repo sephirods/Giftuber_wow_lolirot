@@ -4,6 +4,7 @@ dist/
 *.spec
 __pycache__/
 .pytest_cache/
+_internal/
 
 
 # Local config & temporary files
