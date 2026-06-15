@@ -339,6 +339,11 @@ if (Test-Path 'project_update.zip') {{
     Remove-Item 'project_update.zip' -Force
 }}
 
+# Limpiar variable de entorno de PyInstaller para evitar conflictos de DLL
+if (Test-Path env:_MEIPASS) {
+    Remove-Item env:_MEIPASS -Force
+}
+
 # Iniciar la nueva versión
 {run_command}
 
@@ -348,10 +353,12 @@ Remove-Item 'updater.ps1' -Force
                 with open(ps_script_path, 'w', encoding='utf-8') as f:
                     f.write(ps_content)
                 
-                # Ejecutar script de PowerShell de manera desacoplada
+                # Ejecutar script de PowerShell de manera desacoplada sin heredar variables de PyInstaller
                 print("[*] Ejecutando updater.ps1 en segundo plano...")
+                env = os.environ.copy()
+                env.pop('_MEIPASS', None)
                 subprocess.Popen(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "updater.ps1"], 
-                                 creationflags=0x08000000)
+                                 creationflags=0x08000000, env=env)
                 
                 # Responder afirmativo y cerrar la app
                 self.send_response(200)
