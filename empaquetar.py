@@ -1,7 +1,16 @@
 import os
+import json
 import zipfile
 import shutil
 import subprocess
+
+def get_version():
+    try:
+        with open("version.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data.get("version", "2.4.8")
+    except Exception:
+        return "2.4.8"
 
 def package_project():
     print("[*] Iniciando empaquetado de archivos del proyecto...")
@@ -58,7 +67,10 @@ def package_project():
     print(f"[OK] {zip_name} creado con éxito.")
 
 def compile_installer():
-    print("[*] Compilando el instalador con PyInstaller...")
+    version = get_version()
+    print(f"[*] Compilando el instalador para la versión {version} con PyInstaller...")
+    
+    inst_name = f"Instalador_Giftuber_v{version}"
     
     # Comando de PyInstaller para compilar el instalador con datos adjuntos
     cmd = [
@@ -69,7 +81,7 @@ def compile_installer():
         "--icon=giftuber.ico",
         "--add-data", "project_files.zip;.",
         "--add-data", "giftuber.ico;.",
-        "--name=Instalador_Giftuber_v2.4.7",
+        f"--name={inst_name}",
         "installer.py"
     ]
     
@@ -79,14 +91,14 @@ def compile_installer():
         print("[OK] Instalador compilado con éxito.")
         
         # Mover a la raíz
-        src_exe = os.path.join("dist", "Instalador_Giftuber_v2.4.7.exe")
-        dest_exe = "Instalador_Giftuber_v2.4.7.exe"
+        src_exe = os.path.join("dist", f"{inst_name}.exe")
+        dest_exe = f"{inst_name}.exe"
         if os.path.exists(src_exe):
             shutil.move(src_exe, dest_exe)
             print(f"[OK] Instalador movido a {dest_exe}")
             
             # Crear zip del instalador
-            zip_inst = "Instalador_Giftuber_v2.4.7.zip"
+            zip_inst = f"{inst_name}.zip"
             print(f"[*] Creando zip del instalador: {zip_inst}...")
             with zipfile.ZipFile(zip_inst, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 zipf.write(dest_exe)
@@ -97,7 +109,7 @@ def compile_installer():
         for temp_dir in ["build", "dist"]:
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
-        spec_file = "Instalador_Giftuber_v2.4.7.spec"
+        spec_file = f"{inst_name}.spec"
         if os.path.exists(spec_file):
             os.remove(spec_file)
         print("[OK] Limpieza completada.")
