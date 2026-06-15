@@ -8,6 +8,14 @@ import ssl
 # SSL context that ignores cert verification just in case
 ssl_context = ssl._create_unverified_context()
 
+def get_version():
+    try:
+        with open("version.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data.get("version", "2.4.9")
+    except Exception:
+        return "2.4.9"
+
 def get_git_token_and_repo():
     try:
         url = subprocess.check_output(["git", "config", "remote.origin.url"], text=True).strip()
@@ -83,7 +91,7 @@ def main():
         print("No se pudo obtener el token o el repositorio.")
         return
         
-    version = "2.4.8"
+    version = get_version()
     upload_url = create_release(token, repo, version)
     if not upload_url:
         return
