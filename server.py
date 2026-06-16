@@ -329,9 +329,9 @@ class GiftuberHandler(http.server.SimpleHTTPRequestHandler):
                     f'tar -xf "{zip_temp_path}" -C "{current_dir}"\r\n'
                     f'if exist "{cal_bak_path}" move /y "{cal_bak_path}" "{cal_path}"\r\n'
                     f'if exist "{zip_temp_path}" del /f /q "{zip_temp_path}"\r\n'
-                    # Limpiar variables de PyInstaller para que el nuevo exe no use el _MEI viejo (ya borrado)
+                    # Solo limpiar _MEIPASS (apunta al temp viejo ya borrado)
+                    # NO limpiar _MEIPASSORIGPATH: el bootloader lo necesita para reconstruir PATH
                     "SET _MEIPASS=\r\n"
-                    "SET _MEIPASSORIGPATH=\r\n"
                     f'{launch_line}\r\n'
                     f'del "%~f0"\r\n'
                 )
@@ -693,7 +693,8 @@ try:
     window.events.closed += on_closed
     
     print("[*] Iniciando interfaz de escritorio...")
-    webview.start()
+    webview.start(gui='edgechromium')
+
 except ImportError:
     # Si no está instalado pywebview (ej: desarrollo clásico en consola), abrir navegador normal
     print("[!] pywebview no instalado. Abriendo navegador por defecto...")
