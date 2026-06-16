@@ -1,4 +1,5 @@
 {
   "version": "2.4.10",
-  "download_url": "https://github.com/sephirods/Giftuber_wow_lolirot/releases/download/v2.4.10/project_files.zip"
+  "download_url": "https://github.com/sephirods/Giftuber_wow_lolirot/releases/download/v2.4.10/project_files.zip",
+  "updater_url": "https://github.com/sephirods/Giftuber_wow_lolirot/releases/download/v2.4.10/updater_giftuber.exe"
 }

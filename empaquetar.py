@@ -117,6 +117,43 @@ def compile_installer():
         print("[ERROR] Error al compilar el instalador:")
         print(result.stderr)
 
+def compile_updater():
+    version = get_version()
+    print(f"[*] Compilando updater_giftuber.exe v{version} con PyInstaller...")
+
+    cmd = [
+        "pyinstaller",
+        "--onefile",
+        "--noconsole",
+        "--clean",
+        "--icon=giftuber.ico",
+        "--add-data", "project_files.zip;.",
+        "--add-data", "giftuber.ico;.",
+        "--name=updater_giftuber",
+        "updater.py"
+    ]
+
+    print(f"[*] Ejecutando: {' '.join(cmd)}")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode == 0:
+        src = os.path.join("dist", "updater_giftuber.exe")
+        dst = "updater_giftuber.exe"
+        if os.path.exists(src):
+            shutil.move(src, dst)
+            print(f"[OK] updater_giftuber.exe creado con éxito.")
+        # Limpieza
+        for d in ["build", "dist"]:
+            if os.path.exists(d):
+                shutil.rmtree(d)
+        for spec in ["updater_giftuber.spec"]:
+            if os.path.exists(spec):
+                os.remove(spec)
+    else:
+        print("[ERROR] Error al compilar el updater:")
+        print(result.stderr)
+
+
 if __name__ == "__main__":
     package_project()
+    compile_updater()
     compile_installer()

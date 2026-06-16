@@ -201,27 +201,31 @@ class GiftuberHandler(http.server.SimpleHTTPRequestHandler):
                 'current_version': VERSION,
                 'update_available': False,
                 'new_version': VERSION,
-                'download_url': ''
+                'download_url': '',
+                'updater_url': ''
             }
             try:
                 req = urllib.request.Request(UPDATE_URL, headers={'User-Agent': 'Mozilla/5.0'})
                 with urllib.request.urlopen(req, timeout=4, context=ssl_context) as response:
                     data = json.loads(response.read().decode('utf-8'))
                     online_version = data.get('version')
-                    download_url = data.get('download_url')
+                    download_url   = data.get('download_url', '')
+                    updater_url    = data.get('updater_url', '')
                     if online_version:
                         try:
                             online_parts = [int(x) for x in online_version.split('.')]
-                            local_parts = [int(x) for x in VERSION.split('.')]
+                            local_parts  = [int(x) for x in VERSION.split('.')]
                             if online_parts > local_parts:
                                 res['update_available'] = True
-                                res['new_version'] = online_version
+                                res['new_version']  = online_version
                                 res['download_url'] = download_url
+                                res['updater_url']  = updater_url
                         except Exception:
                             if online_version != VERSION:
                                 res['update_available'] = True
-                                res['new_version'] = online_version
+                                res['new_version']  = online_version
                                 res['download_url'] = download_url
+                                res['updater_url']  = updater_url
             except Exception as e:
                 print(f"[!] Error al comprobar actualizaciones: {e}")
                 res['error'] = str(e)
@@ -290,11 +294,9 @@ class GiftuberHandler(http.server.SimpleHTTPRequestHandler):
             length = int(self.headers.get('Content-Length', 0))
             try:
                 body = json.loads(self.rfile.read(length))
-                download_url = body.get('download_url')
-                if not download_url:
-                    raise ValueError("Se requiere 'download_url'")
-                
-                print(f"[*] Descargando actualización desde: {download_url}...")
+                updater_url = body.get('updater_url', '')
+                if not updater_url:
+                    raise ValueError("Se requiere 'updater_url'")
 
                 import sys, tempfile
                 exe_actual = sys.executable
@@ -303,65 +305,39 @@ class GiftuberHandler(http.server.SimpleHTTPRequestHandler):
                 else:
                     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-                zip_temp_path = os.path.join(current_dir, 'project_update.zip')
-                cal_path      = os.path.join(current_dir, 'giftuber_calibration.json')
-                cal_bak_path  = os.path.join(current_dir, 'giftuber_calibration.json.bak')
-
-                # Descargar el zip
-                req = urllib.request.Request(download_url, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=40, context=ssl_context) as response, open(zip_temp_path, 'wb') as out_file:
+                # Descargar updater_giftuber.exe al directorio temporal
+                updater_temp = os.path.join(tempfile.gettempdir(), 'updater_giftuber.exe')
+                print(f"[*] Descargando updater desde: {updater_url}...")
+                req = urllib.request.Request(updater_url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=60, context=ssl_context) as response, \
+                     open(updater_temp, 'wb') as out_file:
                     out_file.write(response.read())
-                
-                print("[*] Descarga completada. Creando script de actualización (CMD batch)...")
+                print(f"[*] Updater descargado en: {updater_temp}")
 
-                # Escribir batch en %TEMP% — completamente independiente de la carpeta de instalación
-                bat_script = os.path.join(tempfile.gettempdir(), 'giftuber_update.bat')
-
-                if getattr(sys, 'frozen', False):
-                    launch_line = f'start "" "{exe_actual}"'
-                else:
-                    launch_line = f'start "" /min cmd /c python "{os.path.join(current_dir, "server.py")}"'
-
-                bat_content = (
-                    "@echo off\r\n"
-                    "timeout /t 4 /nobreak > nul\r\n"
-                    f'if exist "{cal_path}" copy /y "{cal_path}" "{cal_bak_path}"\r\n'
-                    f'tar -xf "{zip_temp_path}" -C "{current_dir}"\r\n'
-                    f'if exist "{cal_bak_path}" move /y "{cal_bak_path}" "{cal_path}"\r\n'
-                    f'if exist "{zip_temp_path}" del /f /q "{zip_temp_path}"\r\n'
-                    # Solo limpiar _MEIPASS (apunta al temp viejo ya borrado)
-                    # NO limpiar _MEIPASSORIGPATH: el bootloader lo necesita para reconstruir PATH
-                    "SET _MEIPASS=\r\n"
-                    f'{launch_line}\r\n'
-                    f'del "%~f0"\r\n'
-                )
-
-                with open(bat_script, 'w', encoding='utf-8') as f:
-                    f.write(bat_content)
-
-                # Lanzar via "start" de cmd → proceso 100% independiente del padre
-                print("[*] Ejecutando updater batch en segundo plano...")
+                # Lanzar el updater completamente desacoplado, pasando el directorio de instalación
                 subprocess.Popen(
-                    ["cmd", "/c", "start", "", "/min", "cmd", "/c", bat_script],
-                    creationflags=0x08000000
+                    [updater_temp, current_dir],
+                    creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+                    close_fds=True
                 )
+                print("[*] Updater lanzado. Cerrando Giftuber...")
 
-                # Responder afirmativo y cerrar la app
+                # Responder y cerrar
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
-                self.wfile.write('{"ok": true, "message": "Actualización iniciada"}'.encode('utf-8'))
-                
+                self.wfile.write('{"ok": true, "message": "Actualizacion iniciada"}'.encode('utf-8'))
+
                 def kill_app():
                     time.sleep(1)
                     kill_ahk()
                     os._exit(0)
-                    
+
                 threading.Thread(target=kill_app).start()
                 return
             except Exception as e:
-                print(f"[!] Error al aplicar actualización: {e}")
+                print(f"[!] Error al iniciar actualizacion: {e}")
                 self.send_response(500)
                 self.end_headers()
                 self.wfile.write(json.dumps({'error': str(e)}).encode())

@@ -99,6 +99,7 @@ def main():
     # List of files to upload
     files_to_upload = [
         ("project_files.zip", "application/zip"),
+        ("updater_giftuber.exe", "application/octet-stream"),
         (f"Instalador_Giftuber_v{version}.exe", "application/octet-stream"),
         (f"Instalador_Giftuber_v{version}.zip", "application/zip")
     ]

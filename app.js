@@ -1157,7 +1157,7 @@ async function checkUpdates() {
                             const postResp = await fetch('/trigger_update', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ download_url: res.download_url })
+                                body: JSON.stringify({ updater_url: res.updater_url, download_url: res.download_url })
                             });
                             if (!postResp.ok) {
                                 let errMsg = 'Error al iniciar la actualización. Por favor inténtalo de nuevo.';
