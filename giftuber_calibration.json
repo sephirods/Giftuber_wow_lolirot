@@ -75,6 +75,7 @@
     "paladin_spec": "ret",
     "threshold": 3,
     "delay": 200,
+    "useVAD": false,
     "activeBg": "#0d0b18",
     "activeAvatar": "lolirot_red",
     "colorMappings": {

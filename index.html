@@ -74,7 +74,18 @@
                             <span id="threshold-val">15%</span>
                         </div>
                         <input type="range" id="range-threshold" min="1" max="100" value="15" disabled>
-                        <p class="help-text">El volumen necesario para que tu avatar empiece a hablar.</p>
+                        <p class="help-text">El volumen necesario para que tu avatar empiece a hablar (desactivado si se usa VAD).</p>
+                    </div>
+
+                    <div class="control-group disabled-until-auth">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="checkbox-vad" disabled>
+                            <label for="checkbox-vad">Filtro de Ruido Inteligente (VAD - IA)</label>
+                        </div>
+                        <p class="help-text">Usa Inteligencia Artificial en tiempo real para activar el habla únicamente cuando detecte tu voz, ignorando el ruido ambiente.</p>
+                        <div id="vad-loading-status" style="display: none; font-size: 11px; color: var(--blue); margin-top: 5px; font-weight: 500;">
+                            ⏳ Cargando modelos de IA en el navegador (VAD)...
+                        </div>
                     </div>
 
                     <div class="control-group disabled-until-auth">
@@ -83,7 +94,7 @@
                             <span id="delay-val">200ms</span>
                         </div>
                         <input type="range" id="range-delay" min="50" max="1000" step="50" value="200" disabled>
-                        <p class="help-text">Tiempo que el avatar sigue hablando tras dejar de registrar sonido.</p>
+                        <p class="help-text">Tiempo que el avatar sigue hablando tras dejar de registrar sonido o voz.</p>
                     </div>
                 </section>
 

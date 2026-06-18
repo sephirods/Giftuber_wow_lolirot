@@ -104,6 +104,7 @@ display_state = {
     'paladin_spec': 'ret',
     'threshold': 15,
     'delay': 200,
+    'useVAD': False,
     'activeBg': 'transparent',
     'activeAvatar': 'lolirot',
     'calibration': {
@@ -170,6 +171,7 @@ def save_calibration():
             'paladin_spec': display_state.get('paladin_spec'),
             'threshold': display_state.get('threshold'),
             'delay': display_state.get('delay'),
+            'useVAD': display_state.get('useVAD'),
             'activeBg': display_state.get('activeBg'),
             'activeAvatar': display_state.get('activeAvatar'),
             'colorMappings': display_state.get('colorMappings')

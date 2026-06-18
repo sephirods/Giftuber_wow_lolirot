@@ -8,6 +8,8 @@ const STATE = {
     // Configuración del usuario (cargada de localStorage o por defecto)
     threshold: 15,
     delay: 200,
+    useVAD: false,
+    vadInstance: null,
     bounceHeight: 20,
     bounceSpeed: 150,
     avatarScale: 1.0,
@@ -139,6 +141,8 @@ const DOM = {
     thresholdVal: document.getElementById('threshold-val'),
     rangeDelay: document.getElementById('range-delay'),
     delayVal: document.getElementById('delay-val'),
+    checkboxVAD: document.getElementById('checkbox-vad'),
+    vadLoadingStatus: document.getElementById('vad-loading-status'),
     
     // Carga de imágenes
     fileIdle: document.getElementById('file-idle'),
@@ -210,6 +214,7 @@ async function loadSettingsFromServer() {
             const s = await resp.json();
             if (s.threshold !== undefined && !isNaN(parseInt(s.threshold))) localStorage.setItem('threshold', s.threshold);
             if (s.delay !== undefined && !isNaN(parseInt(s.delay))) localStorage.setItem('delay', s.delay);
+            if (s.useVAD !== undefined) localStorage.setItem('useVAD', s.useVAD);
             if (s.bounceHeight !== undefined && !isNaN(parseInt(s.bounceHeight))) localStorage.setItem('bounceHeight', s.bounceHeight);
             if (s.bounceSpeed !== undefined && !isNaN(parseInt(s.bounceSpeed))) localStorage.setItem('bounceSpeed', s.bounceSpeed);
             if (s.avatarScale !== undefined && !isNaN(parseFloat(s.avatarScale))) localStorage.setItem('avatarScale', s.avatarScale);
@@ -252,6 +257,12 @@ function loadSettings() {
         STATE.delay = parseInt(localStorage.getItem('delay'));
         DOM.rangeDelay.value = STATE.delay;
         DOM.delayVal.textContent = `${STATE.delay}ms`;
+    }
+
+    if (localStorage.getItem('useVAD')) {
+        STATE.useVAD = localStorage.getItem('useVAD') === 'true';
+        DOM.checkboxVAD.checked = STATE.useVAD;
+        DOM.rangeThreshold.disabled = STATE.useVAD;
     }
     
     if (localStorage.getItem('bounceHeight')) {
@@ -334,6 +345,7 @@ function pushSettingsToServer() {
             isGlowEnabled: STATE.isGlowEnabled,
             threshold: STATE.threshold,
             delay: STATE.delay,
+            useVAD: STATE.useVAD,
             activeBg: STATE.activeBg,
             activeAvatar: STATE.activeAvatar
         })
@@ -406,6 +418,29 @@ function initEvents() {
         STATE.selectedMicId = e.target.value;
         localStorage.setItem('selectedMicId', STATE.selectedMicId);
         startAudioStream(STATE.selectedMicId);
+    });
+
+    // Filtro de Ruido Inteligente (VAD)
+    DOM.checkboxVAD.addEventListener('change', async (e) => {
+        STATE.useVAD = e.target.checked;
+        localStorage.setItem('useVAD', STATE.useVAD);
+        DOM.rangeThreshold.disabled = STATE.useVAD;
+        pushSettingsToServer();
+        
+        if (STATE.useVAD) {
+            await initVAD();
+        } else {
+            if (STATE.vadInstance) {
+                try {
+                    await STATE.vadInstance.destroy();
+                } catch (err) {
+                    console.error("Error al destruir VAD:", err);
+                }
+                STATE.vadInstance = null;
+            }
+            DOM.vadLoadingStatus.style.display = 'none';
+            setSpeakingState(false);
+        }
     });
 
     // Selector de Avatar Activo
@@ -559,6 +594,120 @@ function applyBackground(bgValue) {
 }
 
 
+let vadScriptLoaded = false;
+
+async function loadVADScripts() {
+    if (window.vad) {
+        vadScriptLoaded = true;
+        return true;
+    }
+    try {
+        DOM.vadLoadingStatus.style.display = 'block';
+        DOM.vadLoadingStatus.textContent = "⏳ Cargando ONNX Runtime (IA Local)...";
+        await loadScript("/assets/vad/ort.js");
+        if (window.ort) {
+            window.ort.env.wasm.wasmPaths = "/assets/vad/";
+        }
+        DOM.vadLoadingStatus.textContent = "⏳ Cargando Modelo Silero VAD (IA Local)...";
+        await loadScript("/assets/vad/bundle.min.js");
+        
+        DOM.vadLoadingStatus.style.display = 'none';
+        vadScriptLoaded = !!window.vad;
+        return vadScriptLoaded;
+    } catch (e) {
+        console.error("Error al cargar scripts de VAD local:", e);
+        DOM.vadLoadingStatus.style.display = 'block';
+        DOM.vadLoadingStatus.textContent = "❌ Error al cargar modelo VAD local";
+        setTimeout(() => {
+            DOM.vadLoadingStatus.style.display = 'none';
+        }, 5000);
+        return false;
+    }
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Error loading script ${src}`));
+        document.head.appendChild(script);
+    });
+}
+
+async function initVAD() {
+    if (STATE.vadInstance) {
+        try {
+            await STATE.vadInstance.destroy();
+        } catch (e) {
+            console.error("Error al destruir VAD anterior:", e);
+        }
+        STATE.vadInstance = null;
+    }
+
+    if (!STATE.useVAD || !STATE.micStream) {
+        return;
+    }
+
+    const loaded = await loadVADScripts();
+    if (!loaded) {
+        STATE.useVAD = false;
+        DOM.checkboxVAD.checked = false;
+        DOM.rangeThreshold.disabled = false;
+        localStorage.setItem('useVAD', false);
+        pushSettingsToServer();
+        return;
+    }
+
+    try {
+        DOM.vadLoadingStatus.style.display = 'block';
+        DOM.vadLoadingStatus.textContent = "⏳ Inicializando detector de voz (VAD Local)...";
+        
+        STATE.vadInstance = await window.vad.MicVAD.new({
+            stream: STATE.filteredStream || STATE.micStream,
+            baseAssetPath: "/assets/vad/",
+            onFrameProcessed: (probabilities) => {
+                if (!STATE.useVAD) return;
+                const prob = probabilities.isSpeech;
+                
+                if (prob >= 0.70) {
+                    if (STATE.speakingTimeoutId) {
+                        clearTimeout(STATE.speakingTimeoutId);
+                        STATE.speakingTimeoutId = null;
+                    }
+                    if (!STATE.isSpeaking) {
+                        setSpeakingState(true);
+                    }
+                } else if (prob <= 0.30) {
+                    if (STATE.isSpeaking && !STATE.speakingTimeoutId) {
+                        STATE.speakingTimeoutId = setTimeout(() => {
+                            setSpeakingState(false);
+                            STATE.speakingTimeoutId = null;
+                        }, STATE.delay);
+                    }
+                }
+            }
+        });
+
+        STATE.vadInstance.start();
+        DOM.vadLoadingStatus.style.display = 'none';
+    } catch (err) {
+        console.error("Error al iniciar detector de voz (VAD):", err);
+        DOM.vadLoadingStatus.style.display = 'block';
+        DOM.vadLoadingStatus.textContent = "❌ Error al iniciar VAD";
+        setTimeout(() => {
+            DOM.vadLoadingStatus.style.display = 'none';
+        }, 5000);
+        
+        STATE.useVAD = false;
+        DOM.checkboxVAD.checked = false;
+        DOM.rangeThreshold.disabled = false;
+        localStorage.setItem('useVAD', false);
+        pushSettingsToServer();
+    }
+}
+
+
 // --- CONFIGURACIÓN DE AUDIO Y DETECCIÓN ---
 async function requestMicrophoneAccess() {
     try {
@@ -571,7 +720,8 @@ async function requestMicrophoneAccess() {
         // Habilitar elementos de control
         document.querySelectorAll('.disabled-until-auth').forEach(el => el.classList.add('active'));
         DOM.selectMic.disabled = false;
-        DOM.rangeThreshold.disabled = false;
+        DOM.checkboxVAD.disabled = false;
+        DOM.rangeThreshold.disabled = STATE.useVAD;
         DOM.rangeDelay.disabled = false;
         
         DOM.btnAudioAuth.textContent = '✅ Micrófono Conectado';
@@ -613,6 +763,18 @@ async function startAudioStream(deviceId) {
     if (STATE.micStream) {
         STATE.micStream.getTracks().forEach(track => track.stop());
     }
+    if (STATE.filteredStream) {
+        STATE.filteredStream.getTracks().forEach(track => track.stop());
+        STATE.filteredStream = null;
+    }
+    if (STATE.vadInstance) {
+        try {
+            await STATE.vadInstance.destroy();
+        } catch (e) {
+            console.error("Error al destruir VAD anterior:", e);
+        }
+        STATE.vadInstance = null;
+    }
     if (STATE.audioContext) {
         await STATE.audioContext.close();
     }
@@ -634,12 +796,24 @@ async function startAudioStream(deviceId) {
         STATE.micStream = await navigator.mediaDevices.getUserMedia(constraints);
         
         STATE.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Crear filtro pasa-altos (Highpass) de 220Hz para eliminar el ruido del ventilador y graves
+        const highpassFilter = STATE.audioContext.createBiquadFilter();
+        highpassFilter.type = 'highpass';
+        highpassFilter.frequency.value = 220;
+
+        const source = STATE.audioContext.createMediaStreamSource(STATE.micStream);
+        source.connect(highpassFilter);
+
         STATE.analyser = STATE.audioContext.createAnalyser();
         STATE.analyser.fftSize = 256;
         STATE.analyser.smoothingTimeConstant = 0.2;
+        highpassFilter.connect(STATE.analyser);
 
-        const source = STATE.audioContext.createMediaStreamSource(STATE.micStream);
-        source.connect(STATE.analyser);
+        // Crear canal de stream filtrado para VAD
+        const filteredDest = STATE.audioContext.createMediaStreamDestination();
+        highpassFilter.connect(filteredDest);
+        STATE.filteredStream = filteredDest.stream;
 
         // ── Keep-alive: oscilador casi-silencioso para evitar que Chrome
         //    suspenda el AudioContext cuando la tab está en segundo plano.
@@ -653,6 +827,11 @@ async function startAudioStream(deviceId) {
 
         // Iniciar el bucle de detección de volumen
         analyzeVolume();
+
+        // Iniciar VAD si está activo
+        if (STATE.useVAD) {
+            initVAD();
+        }
     } catch (err) {
         console.error('Error al iniciar el stream de audio:', err);
     }
@@ -686,21 +865,23 @@ function analyzeVolume() {
         DOM.volumeBarFill.style.width = `${STATE.volume}%`;
         DOM.volumeVal.textContent = `${STATE.volume}%`;
 
-        // Lógica de detección de voz (Hablar)
-        if (STATE.volume >= STATE.threshold) {
-            if (STATE.speakingTimeoutId) {
-                clearTimeout(STATE.speakingTimeoutId);
-                STATE.speakingTimeoutId = null;
-            }
-            if (!STATE.isSpeaking) {
-                setSpeakingState(true);
-            }
-        } else {
-            if (STATE.isSpeaking && !STATE.speakingTimeoutId) {
-                STATE.speakingTimeoutId = setTimeout(() => {
-                    setSpeakingState(false);
+        // Lógica de detección de voz (Hablar) - Solo si no se está usando VAD
+        if (!STATE.useVAD) {
+            if (STATE.volume >= STATE.threshold) {
+                if (STATE.speakingTimeoutId) {
+                    clearTimeout(STATE.speakingTimeoutId);
                     STATE.speakingTimeoutId = null;
-                }, STATE.delay);
+                }
+                if (!STATE.isSpeaking) {
+                    setSpeakingState(true);
+                }
+            } else {
+                if (STATE.isSpeaking && !STATE.speakingTimeoutId) {
+                    STATE.speakingTimeoutId = setTimeout(() => {
+                        setSpeakingState(false);
+                        STATE.speakingTimeoutId = null;
+                    }, STATE.delay);
+                }
             }
         }
 
