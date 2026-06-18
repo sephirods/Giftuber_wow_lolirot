@@ -81,7 +81,7 @@
     "colorMappings": {
         "ability1": "color_red",
         "ability2": "color_green",
-        "ability3": "color_blue",
+        "ability3": "",
         "ability4": "color_yellow",
         "ability5": "color_cyan",
         "ability6": "color_orange",

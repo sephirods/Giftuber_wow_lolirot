@@ -42,7 +42,7 @@ def create_release(token, repo, version):
         "tag_name": f"v{version}",
         "target_commitish": "main",
         "name": f"v{version}",
-        "body": f"Release v{version} - Corrección de recortes de piernas en OBS/Reel y error de DLL de actualización.",
+        "body": f"Release v{version} - Exclusividad de mapeo de colores y visualización de asignaciones en el selector de habilidades.",
         "draft": False,
         "prerelease": False
     }

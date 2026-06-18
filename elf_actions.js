@@ -26,7 +26,8 @@
         ability5: "color_cyan",    // Revivir -> Cian
         ability6: "color_orange",  // Defensivo -> Naranja
         ability7: "color_purple",  // Divine Toll -> Morado
-        ability8: "color_lime"     // Escudo del Vengador -> Lima
+        ability8: "color_lime",    // Escudo del Vengador -> Lima
+        ability9: "color_pink"     // Boomstick -> Rosa
     };
 
     let colorMappings = loadColorMappings();
@@ -1409,7 +1410,28 @@
             COLOR_OPTIONS.forEach(opt => {
                 const option = document.createElement('option');
                 option.value = opt.value;
-                option.textContent = opt.label;
+                
+                // Buscar si este color ya está asignado a otra habilidad
+                let assignedAbilityId = null;
+                if (opt.value) {
+                    for (const aId in colorMappings) {
+                        if (colorMappings[aId] === opt.value) {
+                            assignedAbilityId = aId;
+                            break;
+                        }
+                    }
+                }
+                
+                let suffix = '';
+                if (assignedAbilityId) {
+                    if (assignedAbilityId !== abilityId) {
+                        const otherDetail = ABILITIES_DETAILS[assignedAbilityId];
+                        const otherName = otherDetail ? otherDetail.label : assignedAbilityId;
+                        suffix = ` [Asignado a: ${otherName}]`;
+                    }
+                }
+                
+                option.textContent = opt.label + suffix;
                 if (opt.value === currentValue) {
                     option.selected = true;
                 }
@@ -1418,9 +1440,19 @@
 
             // Cambiar mapping al seleccionar
             select.addEventListener('change', (e) => {
-                colorMappings[abilityId] = e.target.value;
+                const newValue = e.target.value;
+                if (newValue !== "") {
+                    // Si el color ya está asignado a otra habilidad, desasignarla
+                    for (const aId in colorMappings) {
+                        if (aId !== abilityId && colorMappings[aId] === newValue) {
+                            colorMappings[aId] = "";
+                        }
+                    }
+                }
+                colorMappings[abilityId] = newValue;
                 saveColorMappings();
                 pushColorMappingsToServer();
+                buildColorMappingUI(); // Reconstruir UI para refrescar todos los selectores
             });
 
             rightControls.appendChild(select);
